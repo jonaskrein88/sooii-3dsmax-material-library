@@ -1,6 +1,6 @@
 @echo off
 set script="render_previews.ms"
-set repo="X:\05_Benutzerordner\Jonas\rnd\material_library
+set repo="X:\05_Benutzerordner\Jonas\rnd\material_library"
 set file="X:\05_Benutzerordner\Jonas\rnd\material_library\material_scene.max"
 
 
