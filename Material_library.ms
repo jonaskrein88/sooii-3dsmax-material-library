@@ -6,7 +6,7 @@ global userfile
 global globalPaths, userPaths
 global rendersize = 800
 global myRollout
-global selected_mtl
+global selected_mtl, current_directory
 
 -- current_lib_path i.e. = "X:\05_Benutzerordner\Jonas\bega\anderes\test - Kopie.mat"
 
@@ -148,6 +148,7 @@ Utility myTool "Material Browser"
 
 	button 			but_add 	"add to lib" pos:[600,765] width:100
 	button 			but_rem 	"remove from lib" pos:[700,765] width:100--iconname: (repo + "\\" + "apply.png")
+	button 			but_new 	"New Lib" pos:[800,765] width:100
 
 	button 			but_edit_meta 	"Info" pos:[900,765] width:50
 	button 			but_edit_libmeta 	"LibInfo" pos:[950,765] width:50
@@ -170,6 +171,7 @@ Utility myTool "Material Browser"
 		if (matchpattern d pattern: "*\\") then d = substring d 1 (d.count - 1)
 		newNode = node.Nodes.add (pathConfig.stripPathToLeaf d)
 		newNode.imageIndex = 0
+		newNode.tag = dotNetMXSValue d
 		newNode.foreColor = greyColor
 		newNode
 	)
@@ -298,9 +300,16 @@ Utility myTool "Material Browser"
 
 	on tv Click arg do(
 		hitNode = tv.GetNodeAt (dotNetObject "System.Drawing.Point" arg.x arg.y)
-		if hitNode != undefined do try (
-			load_material_lib hitNode.tag.value
-			create_Images()
+		if hitNode != undefined do 
+		try (
+			local p = hitNode.tag.value
+			if p == undefined then return undefined
+			if matchpattern p pattern:"*.mat" then (
+				current_directory = pathConfig.removePathLeaf p
+				load_material_lib p
+				create_Images()
+			)else current_directory = p
+			print current_directory
 		)
 		catch()
 	)
@@ -423,6 +432,11 @@ Utility myTool "Material Browser"
 	on but_edit_meta pressed do edit_metadata selected_mtl
 
 	on but_edit_libmeta pressed do edit_metadata_lib() 
+
+	on but_new pressed do (
+		create_new_library()
+		create_tree()
+	)
 
 
 

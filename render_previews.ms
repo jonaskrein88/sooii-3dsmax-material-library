@@ -6,7 +6,6 @@ changelog
 - rendering user Materials
 - previews to __THUMBS__
 - thumbnails to __THUMBS__
-- get repo from file
 
 */
 

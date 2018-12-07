@@ -52,6 +52,9 @@ function isInLibrary lib mat = (
 	return 0
 )
 
+
+
+
 function create_metadata mtl = (
 	myAttributes = attributes metadata attribID:#(0x17b88b76, 0x360ea5e8)
 	(
@@ -69,7 +72,6 @@ function create_metadata mtl = (
 	mtl.metadata.comment = new_mat_comment
 	mtl.metadata.type = new_mat_type
 )
-
 function get_metadata_from_user = (
 	utility edit_infos "Edit Info"
 	(
@@ -92,7 +94,6 @@ function get_metadata_from_user = (
 	)
 	CreateDialog edit_infos modal:true width:200 height:400
 )
-
 function read_metadata mtl = (
 	if not isProperty mtl "metadata" then return undefined
 
@@ -108,7 +109,6 @@ function has_metadata mtl = (
 function print_metadata mtl = (
 	print (read_metadata mtl)
 )
-
 function edit_metadata mtl = (
 	if mtl == undefined then return undefined
 	get_metadata_from_user()
@@ -119,7 +119,6 @@ function edit_metadata mtl = (
 	)
 	saveMaterialLibrary current_lib_path
 )
-
 function edit_metadata_lib = (
 	if current_lib_path == undefined  OR current_lib == undefined then return undefined
 	get_metadata_from_user()
@@ -134,6 +133,71 @@ function edit_metadata_lib = (
 	)
 	saveMaterialLibrary current_lib_path
 )
+
+struct myCoolDialogs
+ (
+ 	labelStr,
+ 
+ 	stringQuery = rollout stringQuery "String Query"
+ 	(
+ 		local returnStr
+ 	
+ 		label lblHeader
+ 		editText etInput
+ 
+ 		fn launch label: =
+ 		(
+ 			destroyDialog myCoolDialogs.stringQuery
+ 			if label != unsupplied then
+ 				myCoolDialogs.labelStr = label
+ 			else myCoolDialogs.labelStr = "Enter a Name"
+ 			createDialog myCoolDialogs.stringQuery modal:true
+ 			returnStr -- only put it here if the dialog is modal
+ 		)
+ 
+ 		on stringQuery open do
+ 		(
+ 			lblHeader.text = myCoolDialogs.labelStr
+ 			setFocus etInput
+ 		)
+ 
+ 		on etInput entered str do
+ 		(
+ 			destroyDialog myCoolDialogs.stringQuery
+ 			returnStr = str
+ 		)
+ 	)
+ )
+
+
+function create_new_library = (
+	if current_directory == undefined then return undefined
+	myCoolDialogs = myCoolDialogs() -- as there are variables, an instance is needed
+ 	result = myCoolDialogs.stringQuery.launch label:"Enter your credentials"
+ 	local newName = result
+	if newName == undefined OR newName == "" then return undefined
+	newName = substituteString newName " " "_"
+	newName = substituteString newName "." "_"
+	newName = substituteString newName "ä" "ae"
+	newName = substituteString newName "ö" "oe"
+	newName = substituteString newName "ü" "ue"
+
+	if doesFileExist (current_directory + "\\" + newName + ".mat") then (
+		messageBox "Library does alredy exist"
+		return undefined
+	)
+
+	matlib = MaterialLibrary()
+
+	success = saveTempMaterialLibrary matlib (current_directory + "\\" + newName + ".mat")
+	if success then (
+		success = makeDir (current_directory + "\\" + newName + "__THUMBS__")
+		return success
+	)
+)
+
+
+
 
 
 function addToLibrary lib_path = (
