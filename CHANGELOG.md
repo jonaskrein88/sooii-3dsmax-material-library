@@ -1,9 +1,12 @@
 # Changelog
 
-### 2018-12-07
-* edit material info
-* .mat files can be declared as paths 
-* create new Library with thumbs directory
+all changes are documented here
+
+## 2018-12-07
+### Added
+- edit material info
+- .mat files can be declared as paths 
+- create new Library with thumbs directory
 
 
 
