@@ -1,8 +1,11 @@
 
 
+--globalVars.remove 		#current_lib 
+--globalVars.remove 		#current_lib_path
+
 global repo
 global userfile 
- 
+global current_lib_path, current_lib
 global globalPaths, userPaths
 global rendersize = 800
 global myRollout
@@ -18,6 +21,7 @@ global greenColor = (dotNetClass "System.Drawing.Color").fromARGB 128 255 128
 global blueColor = (dotNetClass "System.Drawing.Color").fromARGB 192 220 255
 global purpleColor = (dotNetClass "System.Drawing.Color").fromARGB 200 180 255
 global yellowColor = (dotNetClass "System.Drawing.Color").fromARGB 255 128 25
+
 
 
 fn get_image mtl = (
@@ -133,6 +137,7 @@ fn open_icons = (
 	for n in names do open_icon iconspath n
 )
 
+if myTool != undefined then DestroyDialog myTool
 
 Utility myTool "Material Browser"
 (
@@ -143,7 +148,8 @@ Utility myTool "Material Browser"
 	bitmap 			bmp_preview 		width:400 height:400 pos:[600,5] visible:false
 
 	imgTag   		img_green_1 bitmap:(bitmap 100 2 color:green)  pos:[400,760] width:100
-	button 			but_apply 	"LOAD" pos:[400,765] width:100
+	button 			but_load 	"LOAD" pos:[400,765] width:50
+	button 			but_apply 	"APPLY" pos:[450,765] width:50
 	imgTag   		img_green_2 bitmap:(bitmap 100 2 color:green)  pos:[400,789] width:100
 
 	button 			but_add 	"add to lib" pos:[600,765] width:100
@@ -164,6 +170,7 @@ Utility myTool "Material Browser"
 		newNode = node.Nodes.add (getFilenameFile m)
 		newNode.tag = dotNetMXSValue m
 		newNode.imageIndex = 1
+		newNode.SelectedImageIndex = 1
 		--newNode.foreColor = blueColor
 		newNode
 	)
@@ -171,6 +178,7 @@ Utility myTool "Material Browser"
 		if (matchpattern d pattern: "*\\") then d = substring d 1 (d.count - 1)
 		newNode = node.Nodes.add (pathConfig.stripPathToLeaf d)
 		newNode.imageIndex = 0
+		newNode.SelectedImageIndex = 0
 		newNode.tag = dotNetMXSValue d
 		newNode.foreColor = greyColor
 		newNode
@@ -192,6 +200,7 @@ Utility myTool "Material Browser"
 		tv.nodes.clear()
 		root = tv.Nodes.add "Public"
 		root.imageIndex = 2
+		root.SelectedImageIndex = 2
 		root.foreColor = greenColor
 		for dir in globalPaths do 
 		(
@@ -203,6 +212,7 @@ Utility myTool "Material Browser"
 		)
 		root = tv.Nodes.add "User"
 		root.imageIndex = 2
+		root.SelectedImageIndex = 2
 		root.foreColor = greenColor
 		for dir in userPaths do 
 		(
@@ -218,14 +228,19 @@ Utility myTool "Material Browser"
 		files = getfiles img_name
 		if files.count > 0 then bmp_preview.filename = files[1]
 	)
-	fn create_Images = (
+	fn print_lib = print current_lib
 
+	fn create_Images = (
+		print current_lib
+		if current_lib == undefined then( print "no lib"; return undefined)
+		
 		try (removesubRollout theSub myRollout)
 		catch()
 		--imgs = (getfiles ((pathConfig.removePathLeaf current_lib_path) + "\\" +"*.jpg"))
 		try (
 			errorImg = openbitmap (repo + "\\" + "noPreview.jpg")
-			 
+			if errorImg == undefined then print "could not load error image"
+
 			rci = rolloutCreator "myRollout" "Previews"
 			rci.begin()
 			for i = 1 to current_lib.count do
@@ -251,8 +266,9 @@ Utility myTool "Material Browser"
 				btm.images = #(img, undefined, 1,1,1,1,1 )
 			)
 		)
-		catch (print "error while creating")
+		catch (print "error while creating images")
 	)
+
 	fn init_tv = (
 		--tv.Indent = 20
 		--tv.CheckBoxes = true
@@ -270,48 +286,45 @@ Utility myTool "Material Browser"
 
 
 
-	fn fill_lv = (
-		lv_mtls.items.clear()
-		for mtl in current_lib do (
-			local li = dotNetObject "System.Windows.Forms.ListViewItem"
-			local subLi = li.SubItems.add mtl.name
-			lv_mtls.Items.addRange #(li)
-		)
-	)
 	fn get_selected_mtl = (
 		if lv_mtls.SelectedItems.count != 1 then return 0
 		mtl = current_lib[lv_mtls.SelectedItems.Item[0].index+1]
 		--print mtl
 		mtl
 	)
-	fn load_material_lib path = (
-		if (loadMaterialLibrary path) then (
+	fn load_material_lib p = (
+		if (loadMaterialLibrary p) then (
 			global current_lib = currentMaterialLibrary
-			global current_lib_path = path
-			print current_lib
-			fill_lv()
+			global current_lib_path = p
 		)
+		else print "cannot open lib"
 	)
-	fn refresh_images = fill_lv()
+	fn refresh_images = create_Images()
 
 
 
 	-- events
 
+	
+
 	on tv Click arg do(
 		hitNode = tv.GetNodeAt (dotNetObject "System.Drawing.Point" arg.x arg.y)
-		if hitNode != undefined do 
-		try (
+		if hitNode != undefined AND hitnode.tag != undefined do 
+		--try (
 			local p = hitNode.tag.value
 			if p == undefined then return undefined
 			if matchpattern p pattern:"*.mat" then (
 				current_directory = pathConfig.removePathLeaf p
 				load_material_lib p
+				--print current_lib
+				print_lib()
 				create_Images()
-			)else current_directory = p
-			print current_directory
-		)
-		catch()
+			)
+			else current_directory = p
+
+			--print current_directory
+		--)
+		--catch()
 	)
 	on lv_mtls click do (
 		mtl = get_selected_mtl()
@@ -423,11 +436,15 @@ Utility myTool "Material Browser"
 		)
 		CreateDialog settingsWindow width:800 height:800
 	)
-	on but_apply pressed do with undo label:"Apply Material" on (
+	on but_load pressed do with undo label:"Load Material" on (
 		try (
 			add_to_sme selected_mtl
 			)
 		catch("could not load material")
+	)
+	on but_apply pressed do with undo label:"Apply Material" on (
+		try $.material = selected_mtl
+		catch()
 	)
 	on but_edit_meta pressed do edit_metadata selected_mtl
 
@@ -442,17 +459,17 @@ Utility myTool "Material Browser"
 
 	
 	on myTool open do (
-		get_repo()
-		set_user_path()
-		get_Directories()
-		init_lv()
-		init_tv()
-
 		if current_lib != undefined AND current_lib_path != undefined then (
 			load_material_lib current_lib_path
 			create_Images()
 		)
 		else global current_lib_path, current_lib
+
+		get_repo()
+		set_user_path()
+		get_Directories()
+		init_lv()
+		init_tv()
 	)
 
 
