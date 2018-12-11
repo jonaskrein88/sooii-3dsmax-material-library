@@ -19,6 +19,9 @@ all changes are documented here
 - update images on change
 - icon change on selection
 
+## 2018-12-10
+### Added 
+- Relink Materials and Librarys
 
 
 

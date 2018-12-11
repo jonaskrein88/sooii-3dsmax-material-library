@@ -142,25 +142,26 @@ if myTool != undefined then DestroyDialog myTool
 Utility myTool "Material Browser"
 (
 
-	dotNetControl 	lv_mtls 	"System.Windows.Forms.ListView" width:250 height:500 align:#left offset:[300,0] visible:false
-	dotNetControl 	tv 			"TreeView" pos:[0,0] width:300 height:780 across:2
+	dotNetControl 	lv_mtls 			"System.Windows.Forms.ListView" width:250 height:500 align:#left offset:[300,0] visible:false
+	dotNetControl 	tv 					"TreeView" pos:[0,0] width:300 height:780 across:2
 	subrollout 		theSub 				height:750 width:1100 pos:[305,0]
 	bitmap 			bmp_preview 		width:400 height:400 pos:[600,5] visible:false
 
-	imgTag   		img_green_1 bitmap:(bitmap 100 2 color:green)  pos:[400,760] width:100
-	button 			but_load 	"LOAD" pos:[400,765] width:50
-	button 			but_apply 	"APPLY" pos:[450,765] width:50
-	imgTag   		img_green_2 bitmap:(bitmap 100 2 color:green)  pos:[400,789] width:100
+	imgTag   		img_green_1 		bitmap:(bitmap 100 2 color:green)  pos:[400,760] width:100
+	button 			but_load 			"LOAD" pos:[400,765] width:50
+	button 			but_apply 			"APPLY" pos:[450,765] width:50
+	imgTag   		img_green_2 		bitmap:(bitmap 100 2 color:green)  pos:[400,789] width:100
 
-	button 			but_add 	"add to lib" pos:[600,765] width:100
-	button 			but_rem 	"remove from lib" pos:[700,765] width:100--iconname: (repo + "\\" + "apply.png")
-	button 			but_new 	"New Lib" pos:[800,765] width:100
+	button 			but_add 			"Add" pos:[600,765] width:50
+	button 			but_rem 			"Delete" pos:[650,765] width:50--iconname: (repo + "\\" + "apply.png")
+	button 			but_new 			"New Lib" pos:[800,765] width:100
 
-	button 			but_edit_meta 	"Info" pos:[900,765] width:50
+	button 			but_edit_meta 		"Info" pos:[900,765] width:50
 	button 			but_edit_libmeta 	"LibInfo" pos:[950,765] width:50
+	button 			but_relink 			"Relink" pos:[1000,765] width:50
 
-	button 			but_go 		"render previews"  pos:[1100,765] width:100
-	button 			but_settings "settings" pos:[1200,765] width:100
+	button 			but_go 				"render previews"  pos:[1100,765] width:100
+	button 			but_settings 		"settings" pos:[1200,765] width:100
 	
 
 	-- tree view
@@ -449,6 +450,8 @@ Utility myTool "Material Browser"
 	on but_edit_meta pressed do edit_metadata selected_mtl
 
 	on but_edit_libmeta pressed do edit_metadata_lib() 
+
+	on but_relink pressed do user_relink()
 
 	on but_new pressed do (
 		create_new_library()
