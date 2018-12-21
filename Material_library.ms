@@ -21,7 +21,8 @@ global greenColor = (dotNetClass "System.Drawing.Color").fromARGB 128 255 128
 global blueColor = (dotNetClass "System.Drawing.Color").fromARGB 192 220 255
 global purpleColor = (dotNetClass "System.Drawing.Color").fromARGB 200 180 255
 global yellowColor = (dotNetClass "System.Drawing.Color").fromARGB 255 128 25
-
+global lightgrey = (dotNetClass "System.Drawing.Color").fromARGB 128 128 128
+global darkgrey = (dotNetClass "System.Drawing.Color").fromARGB 45 45 45
 
 
 fn get_image mtl = (
@@ -52,38 +53,7 @@ fn show_image mtl = (
 	try display (openBitmap (get_image mtl))
 	catch()
 )
-fn select_material index = (
-	selected_mtl = current_lib[index]
-	print_metadata selected_mtl 
-	true
-)
-fn add_to_SME mat = (
-	if mat == undefined then return 0
-	print mat
-	
-	if not (sme.isOpen()) then sme.open()
-	local actIndex = sme.activeview
-	local theView = sme.getview actIndex
-	if theView == undefined then (messageBox "open sme"; return false)
-
-	--navi = sme.GetMaterialPool()
-	--pos = [0,0]
-	--navi.position = pos
-	--navi.setFocus()
-
-	local pos = [random -1000 1000, random -1000 1000]
-	local newNode = theView.createnode mat pos
-	theView.SetSelectedNodes  #(mat)
-	sme.SetMtlInParamEditor mat
-	theView.ZoomExtents type:#selected
-)
 fn apply_material index = (
-	undo on (
-		selected_mtl = current_lib[index]
-		print selected_mtl
-		try add_to_SME current_lib[index]
-		catch()
-	)
 )
 fn show_preview index = (
 	selected_mtl = current_lib[index]
@@ -112,11 +82,25 @@ fn get_Directories = (
 fn get_repo = (
 	global repo = readLine (openFile "repo_path.txt")
 )
+fn select_material index = (
+	selected_mtl = current_lib[index]
+	print_metadata selected_mtl 
+	local meta = read_metadata selected_mtl
+	myTool.dnc_label_a.text = selected_mtl.name
+	if meta != undefined then (
+		myTool.dnc_label_b.text = meta[3] + "          " + meta[4] + "-" + meta[1] as string
+		myTool.dnc_label_c.text = meta[2] 
+	)
+	else (
+		myTool.dnc_label_b.text = "no info"
+		myTool.dnc_label_b.text = "no info"
+	)
+	true
+)
 
 
-
-
-
+global ilTv = dotNetObject "System.Windows.Forms.ImageList"
+ilTv.imageSize = dotNetObject "System.Drawing.Size" 16 15
 
 fn open_icon iconspath n = (
 	local fpath = iconspath + "\\" + n + ".bmp"
@@ -128,8 +112,6 @@ fn open_icon iconspath n = (
 	else print "no icon"
 )
 fn open_icons = (
-	global ilTv = dotNetObject "System.Windows.Forms.ImageList"
-	ilTv.imageSize = dotNetObject "System.Drawing.Size" 16 15
 	
 	local iconspath = repo + "\\icons" 
 	--local names = #("basic_archive_full","basic_folder_multiple","basic_bookmark", "basic_folder","basic_world")
@@ -143,22 +125,28 @@ Utility myTool "Material Browser"
 (
 
 	dotNetControl 	lv_mtls 			"System.Windows.Forms.ListView" width:250 height:500 align:#left offset:[300,0] visible:false
-	dotNetControl 	tv 					"TreeView" pos:[0,0] width:300 height:780 across:2
-	subrollout 		theSub 				height:750 width:1100 pos:[305,0]
+	dotNetControl 	tv 					"TreeView" pos:[0,0] width:300 height:600 across:2
+	dotNetControl 	dnc_label_a 		"Windows.Forms.Label" pos:[10,660] width:290 
+	dotNetControl 	dnc_label_c 		"Windows.Forms.Label" pos:[10,690] width:290 
+	dotNetControl 	dnc_label_b 		"Windows.Forms.Label" pos:[10,780] width:290 
+	subrollout 		theSub 				height:728 width:1100 pos:[305,0]
 	bitmap 			bmp_preview 		width:400 height:400 pos:[600,5] visible:false
+	imgTag   		img_black 			bitmap:(bitmap 280 1 color:(color 50 50 50))  pos:[10,645] 
 
-	imgTag   		img_green_1 		bitmap:(bitmap 100 2 color:green)  pos:[400,760] width:100
-	button 			but_load 			"LOAD" pos:[400,765] width:50
-	button 			but_apply 			"APPLY" pos:[450,765] width:50
-	imgTag   		img_green_2 		bitmap:(bitmap 100 2 color:green)  pos:[400,789] width:100
+	imgTag   		img_green_1 		bitmap:(bitmap 100 2 color:green)  pos:[320,760] width:100
+	button 			but_load 			"LOAD" pos:[320,765] width:50
+	button 			but_apply 			"APPLY" pos:[370,765] width:50
+	imgTag   		img_green_2 		bitmap:(bitmap 100 2 color:green)  pos:[320,789] width:100
+	button 			but_replace 		"REPLACE" pos:[420,765] width:50
 
 	button 			but_add 			"Add" pos:[600,765] width:50
 	button 			but_rem 			"Delete" pos:[650,765] width:50--iconname: (repo + "\\" + "apply.png")
 	button 			but_new 			"New Lib" pos:[800,765] width:100
 
-	button 			but_edit_meta 		"Info" pos:[900,765] width:50
-	button 			but_edit_libmeta 	"LibInfo" pos:[950,765] width:50
-	button 			but_relink 			"Relink" pos:[1000,765] width:50
+	button 			but_edit_meta 		"Edit" pos:[900,765] width:50 tooltip:"Edit the metadata of the selected material"
+	button 			but_edit_libmeta 	"Edit all" pos:[950,765] width:50 tooltip:"Edit the metadata of the current library"
+	button 			but_relink 			"Relink" pos:[1000,765] width:50 tooltip:"Opens a window where you can relink maps of the current library\nThis is useful after moving a library"
+	button 			but_repair 			"R" pos:[1050,765] width:20 tooltip:"updates metadata format" visible:false
 
 	button 			but_go 				"render previews"  pos:[1100,765] width:100
 	button 			but_settings 		"settings" pos:[1200,765] width:100
@@ -256,7 +244,7 @@ Utility myTool "Material Browser"
 			)
 			rci.end()
 
-			addsubrollout theSub myRollout
+			addsubrollout theSub myRollout 
 
 			for i = 1 to current_lib.count do
 			(
@@ -269,11 +257,10 @@ Utility myTool "Material Browser"
 		)
 		catch (print "error while creating images")
 	)
-
 	fn init_tv = (
 		--tv.Indent = 20
 		--tv.CheckBoxes = true
-		tv.backColor = (dotNetClass "System.Drawing.Color").fromARGB 50 50 50
+		tv.backColor = (dotNetClass "System.Drawing.Color").fromARGB 45 45 45
 		tv.forecolor = whiteColor
 		tv.borderstyle = (dotNetClass "System.Windows.Forms.BorderStyle").None
 		open_icons()	
@@ -284,6 +271,29 @@ Utility myTool "Material Browser"
 		--tv.imageList = ilTv
 		create_tree()
 	)
+	fn init_labels = (
+		local bkgCol = (colorman.getcolor #background * 255) as color
+		dnc_label_a.text = ""
+		dnc_label_b.text = ""
+		dnc_label_c.text = ""
+		dnc_label_a.backColor = darkgrey
+		dnc_label_b.backColor = darkgrey
+		dnc_label_c.backColor = darkgrey
+		dnc_label_b.foreColor = lightgrey
+		dnc_label_c.foreColor = lightgrey
+		--dnc_label_a.backColor = (dotNetClass "System.Drawing.Color").fromArgb bkgCol.r bkgCol.g bkgCol.b
+		--dnc_label_a.foreColor = (dotNetClass "System.Drawing.Color").fromARGB 128 255 128
+		dnc_label_a.foreColor = (dotNetClass "System.Drawing.Color").fromARGB 255 255 255
+		dnc_label_a.AutoSize = false
+		dnc_label_a.Size = 		dotNetObject "System.Drawing.Size" 290 14
+		dnc_label_a.font = dotnetobject "System.Drawing.Font" "Arial" 12
+		--dnc_label_b.foreColor = (dotNetClass "System.Drawing.Color").fromARGB 255 128 128
+		dnc_label_a.Size = 		dotNetObject "System.Drawing.Size" 290 80
+		--dnc_label_b.foreColor = (dotNetClass "System.Drawing.Color").fromARGB 255 128 128
+		
+	)
+
+
 
 
 
@@ -301,6 +311,10 @@ Utility myTool "Material Browser"
 		else print "cannot open lib"
 	)
 	fn refresh_images = create_Images()
+
+
+
+
 
 
 
@@ -335,6 +349,7 @@ Utility myTool "Material Browser"
 		mtl = get_selected_mtl()
 		$.material = mtl
 	)
+	/*
 	fn init_lv = (
 		lv_mtls.Clear()
 		lv_mtls.backColor = (dotNetClass "System.Drawing.Color").fromARGB 50 50 50
@@ -348,6 +363,7 @@ Utility myTool "Material Browser"
 		lv_mtls.forecolor = whiteColor
 		lv_mtls.HeaderStyle = lv_mtls.HeaderStyle.None	
 	)
+	*/
 
 
 
@@ -363,6 +379,8 @@ Utility myTool "Material Browser"
 		success = addToLibrary current_lib_path
 		refresh_images()
 	)
+	on but_replace pressed do with undo label: "Replace" on replace_materials()
+
 	on but_rem pressed do removefromlibrary current_lib_path selected_mtl
 
 	on but_settings pressed do (
@@ -449,6 +467,8 @@ Utility myTool "Material Browser"
 	)
 	on but_edit_meta pressed do edit_metadata selected_mtl
 
+	on but_repair pressed do repair_old_metadata() 
+
 	on but_edit_libmeta pressed do edit_metadata_lib() 
 
 	on but_relink pressed do user_relink()
@@ -462,6 +482,8 @@ Utility myTool "Material Browser"
 
 	
 	on myTool open do (
+		init_labels()
+
 		if current_lib != undefined AND current_lib_path != undefined then (
 			load_material_lib current_lib_path
 			create_Images()
@@ -471,8 +493,9 @@ Utility myTool "Material Browser"
 		get_repo()
 		set_user_path()
 		get_Directories()
-		init_lv()
+		--init_lv()
 		init_tv()
+		
 	)
 
 
@@ -486,5 +509,5 @@ Utility myTool "Material Browser"
 
 
 )
-CreateDialog myTool width:1400 height:800 style:#(#style_titlebar, #style_border, #style_sysmenu, #style_minimizebox) 
+CreateDialog myTool width:1400 height:800 bgcolor:(color 45 45 45) style:#(#style_titlebar, #style_border, #style_sysmenu, #style_minimizebox) 
 		
