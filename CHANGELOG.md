@@ -40,7 +40,15 @@ all changes are documented here
 
 ## 2018-12-21
 ### Changed
--bugfixes, tooltips etc.
+- bugfixes, tooltips etc.
+
+## 2019-01-30
+### Changed
+- bugfixes
+
+### Added 
+- filebrowser for libr
+- make public / make privat function
 
 # TODO
 * replace query on load/apply

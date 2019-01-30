@@ -318,6 +318,8 @@ Utility myTool "Material Browser"
 
 
 
+
+
 	-- events
 
 	
@@ -384,73 +386,132 @@ Utility myTool "Material Browser"
 	on but_rem pressed do removefromlibrary current_lib_path selected_mtl
 
 	on but_settings pressed do (
-
+		global settingsWindow
 		Utility settingsWindow "Settings"(
 
 			group "Public Paths"
 			(
 				MultiListBox  		mlt_paths 			"" width:600 height:20 align:#left  
-				button 				but_add 			"Add" align:#left across:2 align:#left 
-				edittext 			edt_new 			align:#left offset:[-350,0]
+				button 				but_add 			"Add" align:#left across:3 align:#left 
 				button 				but_remove 			"Remove" align:#left 
-				--button 				but_private 		"make private"
+				button 				but_private 		"make private" align:#left offset:[-200,0]
 			)
 			label space00 ""
 			group "User Paths"
 			(
 				MultiListBox  		mlt_paths_User 		"" width:600 height:20 align:#left 
-				button 				but_add_user 		"Add" align:#left across:2 align:#left
-				edittext 			edt_new_user 		align:#left offset:[-350,0]
+				button 				but_add_user 		"Add" align:#left across:3 align:#left
 				button 				but_remove_user		"Remove" align:#left 
-				--button 				but_public 			"make public"
+				button 				but_public 			"make public" align:#left offset:[-200,0]
 			)
 
 			fn init = (
 				get_Directories()
 				mlt_paths.items = globalPaths
 				mlt_paths_User.items = userPaths
-				edt_new_user.text = ""
-				edt_new.text = ""
 			)
+
+		
 			fn write_file myPath lines = (
 				stream = openFile myPath mode:"w+"
 				if stream != undefined then
 				(
-					for l in lines do format (l + "\n") to:stream
+					try(for l in lines do format (l + "\n") to:stream)
+					catch(print "Error while writing to file")
 					flush stream
 					close stream 
 				)
+				else messageBox ( "No File: " + myPath)
 			)
-			on settingsWindow open do init()
 
-			on but_add pressed do (
-				newPath = edt_new.text 
+			fn add_to_public_paths newPath =
+			(
 				if newPath == undefined or newPath == "" then return false
 				append globalPaths newPath
 				write_file (repo + "\\" + "paths.txt") globalPaths
-				edt_new.text = ""
 				init()
 			)
-			on but_add_user pressed do (
-				newPath = edt_new_user.text 
+
+			fn add_to_user_paths newPath = 
+			(
 				if newPath == undefined or newPath == "" then return false
 				append userPaths newPath
 				write_file userfile userPaths
 				init()
 			)
-			on but_remove pressed do (
+
+
+			on but_add_user pressed do (
+				p = getOpenFileName caption:"Select a Library" types:"Material Library(*.mat)"
+				add_to_user_paths p
+			)
+			on but_add pressed do (
+				p = getOpenFileName caption:"Select a Library" types:"Material Library(*.mat)"
+				add_to_public_paths p
+			)
+
+
+			fn remove_public  = (
 				sel = mlt_paths.selection
 				newLines = for i = 1 to globalPaths.count where (not sel[i]) collect globalPaths[i]
 				write_file (repo + "\\" + "paths.txt") newLines 
-				init()
 			)
-			on but_remove_user pressed do (
+
+			fn remove_user  = (
 				sel = mlt_paths_user.selection
 				newLines = for i = 1 to userPaths.count where (not sel[i]) collect userPaths[i]
 				write_file userfile newLines 
+			)
+
+			on but_public pressed do 
+			(
+				sel = mlt_paths_user.selection
+				lines_to_keep = for i = 1 to userPaths.count where (not sel[i]) collect userPaths[i]
+				for i = 1 to userPaths.count where sel[i] do append globalPaths userPaths[i]
+				write_file (repo + "\\" + "paths.txt") globalPaths
+				write_file userfile lines_to_keep 
 				init()
 			)
-			on settingsWindow close do create_tree()
+
+			on but_private pressed do 
+			(
+				sel = mlt_paths.selection
+				lines_to_keep = for i = 1 to globalPaths.count where (not sel[i]) collect globalPaths[i]
+				for i = 1 to globalPaths.count where sel[i] do append userPaths globalPaths[i]
+				write_file userfile userpaths
+				write_file (repo + "\\" + "paths.txt") lines_to_keep
+				init()
+
+
+
+
+			)
+
+
+
+
+
+
+
+
+
+
+			on settingsWindow open do init()
+
+
+			on but_remove pressed do (
+				remove_public()
+				init()
+			)
+
+			on but_remove_user pressed do (
+				remove_user()
+				init()
+			)
+			on settingsWindow close do (try(create_tree());catch())
+
+
+			
 
 		)
 		CreateDialog settingsWindow width:800 height:800
@@ -496,6 +557,10 @@ Utility myTool "Material Browser"
 		--init_lv()
 		init_tv()
 		
+	)
+	on myTool close do (
+		try( DestroyDialog settingsWindow)
+		catch()
 	)
 
 
