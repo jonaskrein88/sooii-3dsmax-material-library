@@ -47,7 +47,7 @@ all changes are documented here
 - bugfixes
 
 ### Added 
-- filebrowser for libr
+- filebrowser for librarys
 - make public / make privat function
 
 # TODO
