@@ -57,3 +57,4 @@ all changes are documented here
 * update materials from library
 * copy and move materials
 * edit/delete selection of materials
+* set path on new lib
