@@ -43,6 +43,28 @@ fn get_thumbnail mtl = (
 	files = getfiles img_name
 	files[1]
 )
+fn write_file myPath lines = (
+	stream = openFile myPath mode:"w+"
+	if stream != undefined then
+	(
+		try(for l in lines do format (l + "\n") to:stream)
+		catch(print "Error while writing to file")
+		flush stream
+		close stream 
+	)
+	else messageBox ( "No File: " + myPath)
+)
+fn add_to_public_paths newPath = (
+	if newPath == undefined or newPath == "" then return false
+	append globalPaths newPath
+	write_file (repo + "\\" + "paths.txt") globalPaths
+)
+fn add_to_user_paths newPath = (
+	if newPath == undefined or newPath == "" then return false
+	append userPaths newPath
+	write_file userfile userPaths
+)
+
 
 
 filein "relink_paths.ms"
@@ -84,6 +106,7 @@ fn get_repo = (
 )
 fn select_material index = (
 	selected_mtl = current_lib[index]
+	if selected_mtl == undefined then return undefined
 	print_metadata selected_mtl 
 	local meta = read_metadata selected_mtl
 	myTool.dnc_label_a.text = selected_mtl.name
@@ -273,12 +296,13 @@ Utility myTool "Material Browser"
 	)
 	fn init_labels = (
 		local bkgCol = (colorman.getcolor #background * 255) as color
+		local bg = (dotNetClass "System.Drawing.Color").fromARGB bkgCol.r bkgCol.r bkgCol.r
 		dnc_label_a.text = ""
 		dnc_label_b.text = ""
 		dnc_label_c.text = ""
-		dnc_label_a.backColor = darkgrey
-		dnc_label_b.backColor = darkgrey
-		dnc_label_c.backColor = darkgrey
+		dnc_label_a.backColor = bg
+		dnc_label_b.backColor = bg
+		dnc_label_c.backColor = bg
 		dnc_label_b.foreColor = lightgrey
 		dnc_label_c.foreColor = lightgrey
 		--dnc_label_a.backColor = (dotNetClass "System.Drawing.Color").fromArgb bkgCol.r bkgCol.g bkgCol.b
@@ -391,15 +415,18 @@ Utility myTool "Material Browser"
 
 			group "Public Paths"
 			(
-				MultiListBox  		mlt_paths 			"" width:600 height:20 align:#left  
+				MultiListBox  		mlt_paths 			"" width:600 height:20 align:#left  across:2
+				label 				lab_info 			"Public Librarys are accessable \nfor all users" width:200 height:100 offset:[130,0] 
 				button 				but_add 			"Add" align:#left across:3 align:#left 
 				button 				but_remove 			"Remove" align:#left 
 				button 				but_private 		"make private" align:#left offset:[-200,0]
+
 			)
 			label space00 ""
 			group "User Paths"
 			(
-				MultiListBox  		mlt_paths_User 		"" width:600 height:20 align:#left 
+				MultiListBox  		mlt_paths_User 		"" width:600 height:20 align:#left across:2
+				label 				lab_info_user 		"Public Librarys are only visible to \nyou. Click 'make public' if you want \nothers to use your Materials " width:210 height:100 offset:[130,0]
 				button 				but_add_user 		"Add" align:#left across:3 align:#left
 				button 				but_remove_user		"Remove" align:#left 
 				button 				but_public 			"make public" align:#left offset:[-200,0]
@@ -411,43 +438,15 @@ Utility myTool "Material Browser"
 				mlt_paths_User.items = userPaths
 			)
 
-		
-			fn write_file myPath lines = (
-				stream = openFile myPath mode:"w+"
-				if stream != undefined then
-				(
-					try(for l in lines do format (l + "\n") to:stream)
-					catch(print "Error while writing to file")
-					flush stream
-					close stream 
-				)
-				else messageBox ( "No File: " + myPath)
-			)
-
-			fn add_to_public_paths newPath =
-			(
-				if newPath == undefined or newPath == "" then return false
-				append globalPaths newPath
-				write_file (repo + "\\" + "paths.txt") globalPaths
-				init()
-			)
-
-			fn add_to_user_paths newPath = 
-			(
-				if newPath == undefined or newPath == "" then return false
-				append userPaths newPath
-				write_file userfile userPaths
-				init()
-			)
-
-
 			on but_add_user pressed do (
 				p = getOpenFileName caption:"Select a Library" types:"Material Library(*.mat)"
 				add_to_user_paths p
+				init()
 			)
 			on but_add pressed do (
 				p = getOpenFileName caption:"Select a Library" types:"Material Library(*.mat)"
 				add_to_public_paths p
+				init()
 			)
 
 
@@ -455,12 +454,14 @@ Utility myTool "Material Browser"
 				sel = mlt_paths.selection
 				newLines = for i = 1 to globalPaths.count where (not sel[i]) collect globalPaths[i]
 				write_file (repo + "\\" + "paths.txt") newLines 
+				init()
 			)
 
 			fn remove_user  = (
 				sel = mlt_paths_user.selection
 				newLines = for i = 1 to userPaths.count where (not sel[i]) collect userPaths[i]
-				write_file userfile newLines 
+				write_file userfile newLines
+				init() 
 			)
 
 			on but_public pressed do 
@@ -481,10 +482,6 @@ Utility myTool "Material Browser"
 				write_file userfile userpaths
 				write_file (repo + "\\" + "paths.txt") lines_to_keep
 				init()
-
-
-
-
 			)
 
 
@@ -574,5 +571,5 @@ Utility myTool "Material Browser"
 
 
 )
-CreateDialog myTool width:1400 height:800 bgcolor:(color 45 45 45) style:#(#style_titlebar, #style_border, #style_sysmenu, #style_minimizebox) 
+CreateDialog myTool width:1400 height:800 style:#(#style_titlebar, #style_border, #style_sysmenu, #style_minimizebox) -- bgcolor:(color 45 45 45)
 		

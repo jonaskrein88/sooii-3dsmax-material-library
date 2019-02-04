@@ -47,8 +47,12 @@ all changes are documented here
 - bugfixes
 
 ### Added 
-- filebrowser for librarys
+- filebrowser for librarys in settings
 - make public / make privat function
+
+## 2019-02-04
+### Changed
+- Create-Library improved
 
 # TODO
 * replace query on load/apply
@@ -57,4 +61,3 @@ all changes are documented here
 * update materials from library
 * copy and move materials
 * edit/delete selection of materials
-* set path on new lib

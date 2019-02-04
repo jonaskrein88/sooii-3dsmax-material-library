@@ -209,64 +209,85 @@ function repair_old_metadata = (
 
 
 
-struct myCoolDialogs
- (
- 	labelStr,
- 
- 	stringQuery = rollout stringQuery "Enter a name" width:300 height:130
- 	(
- 		local returnStr
- 	
- 		label lblHeader align:#left height:80
- 		editText etInput
- 
- 		fn launch label: =
- 		(
- 			destroyDialog myCoolDialogs.stringQuery
- 			if label != unsupplied then
- 				myCoolDialogs.labelStr = label
- 			else myCoolDialogs.labelStr = "Enter a Name"
- 			createDialog myCoolDialogs.stringQuery modal:true
- 			returnStr -- only put it here if the dialog is modal
- 		)
- 
- 		on stringQuery open do
- 		(
- 			lblHeader.text = myCoolDialogs.labelStr
- 			setFocus etInput
- 		)
- 
- 		on etInput entered str do
- 		(
- 			destroyDialog myCoolDialogs.stringQuery
- 			returnStr = str
- 		)
- 	)
- )
 
-function create_new_library = (
-	if current_directory == undefined then (messagebox "Please select a directory or library for your destination" bleep:false; return undefined)
-	myCoolDialogs = myCoolDialogs() -- as there are variables, an instance is needed
-	local txt = "The new Library will be created at\n" + current_directory +"\n\n" + "Please enter a Name"
- 	result = myCoolDialogs.stringQuery.launch label:txt
- 	local newName = result
+
+
+struct DialogStruct 
+(
+	pathQuery = rollout pathQuery "Add a Library" width:550 height:200
+	(
+		local returnStr = ""
+
+		label lab_info "Set a path for the new Lib:"
+		editText edit_path 	"" width: 460 across:2
+		button but_browse "..." offset:[100,-1]
+		button but_create "Create Library"
+
+		on but_browse pressed do (
+			p = getSaveFileName caption:"Save" types:"Material Library(*.mat)"
+			if p != undefined then (
+				if not matchpattern p pattern:"*.mat" then p += ".mat"
+				edit_path.text = p
+			)
+		)
+
+		fn launch = (
+			destroyDialog DialogStruct.pathQuery
+			createDialog DialogStruct.pathQuery modal:true
+			returnStr
+		)
+
+		on but_create pressed do (
+			destroyDialog DialogStruct.pathQuery
+			returnStr = edit_path.text
+		)
+	)
+)
+
+
+
+
+fn repair_name newName = (
 	if newName == undefined OR newName == "" then return undefined
 	newName = substituteString newName " " "_"
 	newName = substituteString newName "." "_"
 	newName = substituteString newName "ä" "ae"
 	newName = substituteString newName "ö" "oe"
 	newName = substituteString newName "ü" "ue"
+	newName
+)
 
-	if doesFileExist (current_directory + "\\" + newName + ".mat") then (
+
+
+
+function create_new_library = (
+	DialogStruct = DialogStruct()
+	result = DialogStruct.pathQuery.launch()
+	if result == undefined then return false
+
+ 	local newName = getFilenameFile result 
+ 	local savePath = pathConfig.removePathLeaf result
+
+	if newName == undefined OR newName == "" then return undefined
+
+
+	newName = repair_name newName
+
+	print newName 
+ 	print savePath 
+
+	if doesFileExist  (savePath + "\\" + newName + ".mat") then (
 		messageBox "Library does alredy exist"
 		return undefined
 	)
 
 	matlib = MaterialLibrary()
 
-	success = saveTempMaterialLibrary matlib (current_directory + "\\" + newName + ".mat")
+	success = saveTempMaterialLibrary matlib (savePath + "\\" + newName + ".mat")
 	if success then (
-		success = makeDir (current_directory + "\\" + newName + "__THUMBS__")
+		success = makeDir (savePath + "\\" + newName + "__THUMBS__")
+		messageBox "Library created"
+		add_to_user_paths (savePath + "\\" + newName + ".mat")
 		return success
 	)
 )
