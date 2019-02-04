@@ -43,8 +43,8 @@ all changes are documented here
 - bugfixes, tooltips etc.
 
 ## 2019-01-30
-### Changed
-- bugfixes
+### Bugfixes
+- small bugfixes
 
 ### Added 
 - filebrowser for librarys in settings
@@ -53,6 +53,9 @@ all changes are documented here
 ## 2019-02-04
 ### Changed
 - Create-Library improved
+
+### Bugfixes
+- render previews: works with _.mat_ entries
 
 # TODO
 * replace query on load/apply
