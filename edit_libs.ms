@@ -14,6 +14,8 @@ function SMEGetSelNodes = (
 	return mtls
 )
 function get_materials = (
+	-- checks if sme selection 
+	-- then checks object selection
 	mtls = SMEGetSelNodes() 
 	if mtls == undefined OR mtls[1] == undefined then 
 	( 
@@ -305,8 +307,16 @@ function addToLibrary lib_path = (
 
 	local lib = currentMaterialLibrary
 
-
-
+	local maps = check_maps_multi mtls
+	if maps.count > 0 then 
+	(
+		local txt = "The following maps are missing: \n\n"
+		for m in maps do txt += m + "\n"
+		txt += "\n Do you want to continue?"
+		q = queryBox txt title: "Broken Links"
+		if not q then return false
+	)
+	
 	-- check existing materials
 	local override_all = false
 	local existing_mtls = for mat in mtls where (isInLibrary lib mat != 0) collect mat.name
@@ -375,6 +385,25 @@ function removefromlibrary lib_path mtl = (
 	print "not found"
 	false
 )
+
+
+
+
+
+
+
+-- replacing
+
+
+
+
+
+
+
+
+
+
+
 
 
 function delete_recursive old = (

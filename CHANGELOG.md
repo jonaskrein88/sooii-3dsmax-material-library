@@ -57,6 +57,12 @@ all changes are documented here
 ### Bugfixes
 - render previews: works with _.mat_ entries
 
+## 2019-02-06
+### Added
+- check bitmaps on insert
+- rescale textures
+- open image with image viewer
+
 # TODO
 * replace query on load/apply
 * rewrite user input

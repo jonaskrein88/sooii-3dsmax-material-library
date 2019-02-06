@@ -23,6 +23,29 @@ fn set_filename n newpath = (
 		default:undefined
 	)
 )
+fn check_maps mtl &files:#() = (
+	-- returns false if maps are missing, returns maps 
+	local out = true
+	local all_maps = get_maps mtl
+	for map in all_maps do (
+		local file = get_filename map
+		if not doesfileexist file then (
+			append files file
+			out = false
+		)
+	)
+	true	
+)
+fn check_maps_multi mtls = (
+	-- checks multiple materials and returns failing paths
+	local maps = #()
+	for mtl in mtls do (
+		local _maps = #()
+		check_maps mtl files:&_maps
+		maps += _maps
+	)
+	maps
+)
 fn find_nodes mtl = (
 	-- collects nodes to relink
 	all_maps = get_maps mtl 
@@ -41,9 +64,9 @@ fn copy_and_relink n dir = (
 	if (copyfile oldpath newpath) then 
 	(
 		set_filename n newpath
-		print "success"
+		print "relink success"
 	)
-	else print "fail"
+	else print "relink failed"
 )
 fn relink mtl newpath = (
 	-- main function for inserting
@@ -101,10 +124,11 @@ fn relink_maps_from_directories mtl directories = (
 
 
 fn user_relink = (
+	if current_lib == undefined OR current_lib_path == undefined then return undefined
 
 	Utility relinkWindow "Relink maps"
 	(
-		edittext edt_path "Path" width:500
+		edittext edt_path "New Path" width:500
 		checkbox chk_wholeLib "Relink complete Library" checked:true
 		button but_go "Relink"
 

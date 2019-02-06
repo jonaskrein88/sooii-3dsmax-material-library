@@ -29,11 +29,33 @@ fn show_geo mtl = (
 	(LayerManager.getLayerFromName "FABRIC").on = if type == 3 then true else false
 )
 
+fn scale_to_tex mtl = (
+	objs = $_GEO*
+	maps = getClassInstances bitmapTexture target:mtl
+	tex = maps[1].bitmap
+	if tex == undefined then return false
+	w = tex.width as float
+	h = tex.height as float
+	ratio = w / h
+
+	for obj in objs do (
+		uv = obj.modifiers["UVW XForm"]
+		if uv != undefined then (
+			uv.U_Tile = 1
+			uv.V_Tile = 1
+			uv.V_Tile = ratio
+			print ratio
+		)
+	)
+	true
+)
+
 
 fn render_preview mtl dir = (
 		filename = dir + "\\" + mtl.name + ".jpg"
 		show_geo mtl
 		for o in $_GEO* do o.material = mtl
+		scale_to_tex mtl
 		cam = getNodeByName "_CAM"
 		--return true
 		makeDir dir
@@ -154,7 +176,7 @@ for dir in all_paths do
 	create_thumbnails dir
 )
 
---quitMax #noprompt
+quitMax #noprompt
 
 
 

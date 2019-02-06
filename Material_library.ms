@@ -65,6 +65,20 @@ fn add_to_user_paths newPath = (
 	write_file userfile userPaths
 )
 
+/*
+tool dragg (
+	on mousePoint clickno do 
+	(
+		if clickno < 2 then (
+			objs = (boxPickNode (box2 (mouse.pos - [2,2]) (mouse.pos + [2,2])) crossing:true )
+			if objs != undefined and objs[1] != undefined then objs[1].material = selected_mtl
+			#stop
+		)
+		else if clickno > 2 then #stop
+	)
+)
+
+*/
 
 
 filein "relink_paths.ms"
@@ -72,7 +86,7 @@ filein "edit_libs.ms"
 
 
 fn show_image mtl = (
-	try display (openBitmap (get_image mtl))
+	try (ShellLaunch (get_image mtl) "")
 	catch()
 )
 fn apply_material index = (
@@ -107,6 +121,8 @@ fn get_repo = (
 fn select_material index = (
 	selected_mtl = current_lib[index]
 	if selected_mtl == undefined then return undefined
+	--stopTool dragg
+	--startTool dragg
 	print_metadata selected_mtl 
 	local meta = read_metadata selected_mtl
 	myTool.dnc_label_a.text = selected_mtl.name
@@ -156,23 +172,23 @@ Utility myTool "Material Browser"
 	bitmap 			bmp_preview 		width:400 height:400 pos:[600,5] visible:false
 	imgTag   		img_black 			bitmap:(bitmap 280 1 color:(color 50 50 50))  pos:[10,645] 
 
-	imgTag   		img_green_1 		bitmap:(bitmap 100 2 color:green)  pos:[320,760] width:100
-	button 			but_load 			"LOAD" pos:[320,765] width:50
-	button 			but_apply 			"APPLY" pos:[370,765] width:50
-	imgTag   		img_green_2 		bitmap:(bitmap 100 2 color:green)  pos:[320,789] width:100
-	button 			but_replace 		"REPLACE" pos:[420,765] width:50
+	imgTag   		img_green_1 		bitmap:(bitmap 100 2 color:green)  pos:[320,760] width:200
+	button 			but_load 			"Load Material" pos:[320,765] width:100
+	button 			but_apply 			"Apply Material" pos:[420,765] width:100
+	imgTag   		img_green_2 		bitmap:(bitmap 100 2 color:green)  pos:[320,789] width:200
+	button 			but_replace 		"REPLACE" pos:[420,765] width:50 visible:false
 
-	button 			but_add 			"Add" pos:[600,765] width:50
-	button 			but_rem 			"Delete" pos:[650,765] width:50--iconname: (repo + "\\" + "apply.png")
-	button 			but_new 			"New Lib" pos:[800,765] width:100
+	button 			but_add 			"Insert Material" pos:[600,765] width:100
+	button 			but_new 			"Create Matlib" pos:[750,765] width:100 tooltip:"Create new Library with thumbnail Directory"
+	button 			but_rem 			"Delete" pos:[850,765] width:50 tooltip:"Remove Selected Material from the current Library"
 
 	button 			but_edit_meta 		"Edit" pos:[900,765] width:50 tooltip:"Edit the metadata of the selected material"
 	button 			but_edit_libmeta 	"Edit all" pos:[950,765] width:50 tooltip:"Edit the metadata of the current library"
 	button 			but_relink 			"Relink" pos:[1000,765] width:50 tooltip:"Opens a window where you can relink maps of the current library\nThis is useful after moving a library"
 	button 			but_repair 			"R" pos:[1050,765] width:20 tooltip:"updates metadata format" visible:false
 
-	button 			but_go 				"render previews"  pos:[1100,765] width:100
-	button 			but_settings 		"settings" pos:[1200,765] width:100
+	button 			but_go 				"Render Previews"  pos:[1150,765] width:100
+	button 			but_settings 		"Configure" pos:[1250,765] width:100
 	
 
 	-- tree view
@@ -324,7 +340,6 @@ Utility myTool "Material Browser"
 	fn get_selected_mtl = (
 		if lv_mtls.SelectedItems.count != 1 then return 0
 		mtl = current_lib[lv_mtls.SelectedItems.Item[0].index+1]
-		--print mtl
 		mtl
 	)
 	fn load_material_lib p = (
