@@ -422,7 +422,10 @@ Utility myTool "Material Browser"
 	)
 	on but_replace pressed do with undo label: "Replace" on replace_materials()
 
-	on but_rem pressed do removefromlibrary current_lib_path selected_mtl
+	on but_rem pressed do (
+		removefromlibrary current_lib_path selected_mtl
+		refresh_images()
+	)
 
 	on but_settings pressed do (
 		global settingsWindow

@@ -11,14 +11,20 @@ function SMEGetSelNodes = (
 	local selNodes = theView.getSelectedNodes()
 	local mtls = for n in selNodes where(superclassof n.reference) == material collect n.reference
 	local maps = for n in selNodes where(superclassof n.reference) == textureMap collect n.reference
-	return mtls
+	return #(mtls, maps)
 )
 function get_materials = (
 	-- checks if sme selection 
 	-- then checks object selection
-	mtls = SMEGetSelNodes() 
+	sel = SMEGetSelNodes()
+	mtls = sel[1]
+	maps = sel[2]
 	if mtls == undefined OR mtls[1] == undefined then 
 	( 
+		if maps.count > 0 then (
+			hdris = for m in maps where (classof m) == vrayhdri collect m
+			if hdris.count > 0 then return hdris
+		) 
 		objs = getCurrentSelection()
 		mtls = for o in objs where o.material != undefined collect o.material
 	)
@@ -319,6 +325,10 @@ function addToLibrary lib_path = (
 	
 	-- check existing materials
 	local override_all = false
+
+	-- rename hdri nodes
+	for mat in mtls where classof mat == vrayhdri do mat.name = pathConfig.stripPathToLeaf (get_filename mat)
+
 	local existing_mtls = for mat in mtls where (isInLibrary lib mat != 0) collect mat.name
 	if existing_mtls.count != 0 then 
 	(

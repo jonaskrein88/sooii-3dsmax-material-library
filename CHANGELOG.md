@@ -63,6 +63,10 @@ all changes are documented here
 - rescale textures
 - open image with image viewer
 
+## 2019-02-06
+### Added
+- hdri support
+
 # TODO
 * replace query on load/apply
 * rewrite user input

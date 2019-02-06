@@ -20,10 +20,16 @@ filein "edit_libs.ms"
 
 -- previews
 
+fn layers_off = (
+	for i = 0 to layerManager.count-1 do (layerManager.getLayer i).on = false
+)
+
 fn show_geo mtl = (
 	local meta = read_metadata mtl
 	local type = if meta != undefined then meta[1] else 1
 	print type
+	layers_off()
+	(LayerManager.getLayerFromName "0").on = true
 	(LayerManager.getLayerFromName "DEFAULT").on = if type == 1 then true else false
 	(LayerManager.getLayerFromName "FLOOR").on = if type == 2 then true else false
 	(LayerManager.getLayerFromName "FABRIC").on = if type == 3 then true else false
@@ -57,10 +63,25 @@ fn render_preview mtl dir = (
 		for o in $_GEO* do o.material = mtl
 		scale_to_tex mtl
 		cam = getNodeByName "_CAM"
+		$PREVIEW_DOME.enabled = false
+		$DEFAULT_DOME.enabled = true
 		--return true
 		makeDir dir
 		render camera:cam vfb:false outputfile:filename cancelled:&cancel quiet:true outputwidth:rendersize outputheight:rendersize
 		return (not cancel)
+)
+
+fn render_hdri map dir = (
+	$PREVIEW_DOME.enabled = true
+	$DEFAULT_DOME.enabled = false
+	$PREVIEW_DOME.texmap = map 
+	layers_off()
+	(LayerManager.getLayerFromName "HDRI").on = true
+	cam = getNodeByName "_CAM"
+	filename = dir + "\\" + map.name + ".jpg"
+	makeDir dir
+	render camera:cam vfb:false outputfile:filename cancelled:&cancel quiet:true outputwidth:rendersize outputheight:rendersize
+	return (not cancel)
 )
 fn read_library libfile = (
 	loadMaterialLibrary libfile
@@ -81,8 +102,12 @@ fn render_previews_for_lib libfile dir = (
 	jobs = create_joblist dir mtls
 	fileoutgamma = 2.2
 	for j in jobs do (
-		success = render_preview j dir
-		if not success then return false
+		if superClassOf j == material then
+		(
+			success = render_preview j dir
+			if not success then return false
+		)
+		else render_hdri j dir
 	)
 	true
 )
