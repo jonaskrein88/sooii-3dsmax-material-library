@@ -68,6 +68,8 @@ all changes are documented here
 - hdri support
 
 # TODO
+* open in explorer
+* thumbnails creation while rendering
 * replace query on load/apply
 * rewrite user input
 * highlight selected
