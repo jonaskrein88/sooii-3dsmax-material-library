@@ -17,26 +17,34 @@ function get_materials = (
 	-- checks if sme selection 
 	-- then checks object selection
 	sel = SMEGetSelNodes()
-	mtls = sel[1]
-	maps = sel[2]
-	if mtls == undefined OR mtls[1] == undefined then 
-	( 
-		if maps.count > 0 then (
-			hdris = for m in maps where (classof m) == vrayhdri collect m
-			if hdris.count > 0 then return hdris
-		) 
+	if sel != undefined then (
+		mtls = sel[1]
+		maps = sel[2]
+		if mtls == undefined OR mtls[1] == undefined then 
+		( 
+			if maps.count > 0 then (
+				hdris = for m in maps where (classof m) == vrayhdri collect m
+				if hdris.count > 0 then return hdris
+			) 
+		)
+	)
+	-- check scene selection
+	else (
 		objs = getCurrentSelection()
 		mtls = for o in objs where o.material != undefined collect o.material
 	)
+	
 	if mtls == undefined OR mtls[1] == undefined then (messageBox "No material selected!"; return undefined)
 	mtls
 )
+
 function deleteImage mtl = (
 	img = get_image mtl
 	if img != undefined then deletefile img
 	img = get_thumbnail mtl
 	if img != undefined then deletefile img
 )
+
 function get_time = (
 	t = getLocalTime()
 	day = t[4] as string
@@ -48,14 +56,15 @@ function get_time = (
 	if minute.count == 1 then minute = "0" + minute
 	day + "." + month + "." + year + "   " + hour + ":" + minute
 )
+
 function isInLibrary lib mat = (
 	matName = mat.name
 	for i = 1 to lib.count do (
-		print lib[i].name 
 		if lib[i].name == matName then return i 
 	)
 	return 0
 )
+
 function create_Hash =(
 	lt = getLocalTime()
 	-- date
@@ -108,7 +117,15 @@ function add_to_SME mat jump:true = (
 
 
 
-function create_metadata mtl = (
+
+
+
+
+
+
+
+
+function create_metadata mtl metadata:undefined = (
 	myAttributes = attributes meta attribID:#(0x1995bf6c, 0x5f4fdb00)
 	(
 		parameters main 
@@ -122,39 +139,21 @@ function create_metadata mtl = (
 	custAttributes.add mtl myAttributes
 
 	mtl.meta.saved_at = get_time()
-	mtl.meta.comment = if new_mat_comment != undefined then new_mat_comment else ""
-	mtl.meta.type = if new_mat_type != undefined then new_mat_type else 1
+	mtl.meta.comment = if metadata != undefined then metadata.comment else ""
+	mtl.meta.type = if metadata != undefined then metadata.type else 1
 	mtl.meta.id = create_Hash()
 )
-function get_metadata_from_user = (
-	utility edit_infos "Edit Info"
-	(
-		edittext edt_comment "Comment" height:200 labelontop:true
-		radiobuttons rad_type "" labels:#("Default", "Floor", "Fabric") columns:1 default: 1 align:#left
-		button but_done "Done" width:200
 
 
-		on edit_infos close do (
-			--global new_mat_comment = edt_comment.text
-			--global new_mat_type = rad_type.state
-		)
-		on but_done pressed do (
-			global new_mat_comment = edt_comment.text
-			global new_mat_type = rad_type.state
-			try DestroyDialog edit_infos
-			catch()
-		)
 
-	)
-	CreateDialog edit_infos modal:true width:200 height:400
-)
 function read_metadata mtl = (
 	if not isProperty mtl "meta" then return undefined
-	type = if mtl.meta.type != undefined then mtl.meta.type else 1
-	comment = if mtl.meta.comment != undefined then mtl.meta.comment else ""
-	date = if mtl.meta.saved_at != undefined then mtl.meta.saved_at else ""
-	id = if mtl.meta.id != undefined then mtl.meta.id else ""
-	#(type, comment, date, id)
+	local meta = metadataStruct()
+	meta.type 		= if mtl.meta.type != undefined 		then mtl.meta.type else 1
+	meta.comment 	= if mtl.meta.comment != undefined 		then mtl.meta.comment else ""
+	meta.saved_at 	= if mtl.meta.saved_at != undefined 	then mtl.meta.saved_at else ""
+	meta.id 		= if mtl.meta.id != undefined 			then mtl.meta.id else ""
+	return meta
 )
 function has_metadata mtl = (
 	x = isProperty mtl "meta"
@@ -163,32 +162,91 @@ function has_metadata mtl = (
 function print_metadata mtl = (
 	print (read_metadata mtl)
 )
+
+
+
+
+
+
+
+
+
+struct infoBoxStruct 
+(
+	mtl,
+	meta,
+	fn launch selected_mtl:undefined = (
+		mtl = selected_mtl
+		
+		rollout infoBox "Enter Material Info" 
+		(
+			edittext edt_comment "Material Information" width:350 height:200 labelontop:true
+			radiobuttons rad_type "Preview Type:" labels:#("Default", "Floor", "Fabric") columns:1 align:#left
+			button but_done "Done" width:200
+			
+			on but_done pressed do (
+				try DestroyDialog infoBox
+				catch()
+				meta = metadataStruct()
+				meta.type = rad_type.state
+				meta.comment = edt_comment.text
+			)
+			
+			on infoBox open do (
+				if mtl != undefined then (
+					if has_metadata mtl then (
+						edt_comment.text = mtl.meta.comment
+						rad_type.state = mtl.meta.type
+					)
+				)
+			)
+		)
+		destroyDialog infoBox 
+		createDialog infoBox width:370 modal:true
+		return meta
+	)
+)
+
+
+
+fn get_metadata_from_user mtl:undefined = (
+	infoBoxVar = infoBoxStruct()
+	meta = infoBoxVar.launch selected_mtl:mtl
+	return meta
+)
+	
+
 function edit_metadata mtl = (
 	if mtl == undefined then return undefined
-	get_metadata_from_user()
+	local meta = get_metadata_from_user mtl:mtl
+	if meta == undefined then return undefined
+
 	if not has_metadata mtl then create_metadata mtl
-	else (
-		mtl.meta.type = new_mat_type
-		mtl.meta.comment = new_mat_comment
-		mtl.saved_at = get_time()
-	)
+	
+	mtl.meta.type = meta.type
+	mtl.meta.comment = meta.comment
+	mtl.saved_at = get_time()
+	
 	saveMaterialLibrary current_lib_path
 )
+
 function edit_metadata_lib = (
 	if current_lib_path == undefined  OR current_lib == undefined then return undefined
-	get_metadata_from_user()
+	local meta = get_metadata_from_user()
+	if meta == undefined then return undefined
+
 	for i = 1 to current_lib.count do
 	(
 		local mtl = current_lib[i]
 		if not has_metadata mtl then create_metadata mtl
-		else (
-			mtl.meta.type = new_mat_type
-			mtl.meta.comment = new_mat_comment
-			mtl.saved_at = get_time()
-		)
+		mtl.meta.type = meta.type
+		mtl.meta.comment = meta.comment
+		mtl.saved_at = get_time()
 	)
 	saveMaterialLibrary current_lib_path
 )
+
+
 function repair_old_material_metadata mtl = (
 
 	-- check if has new type
@@ -220,37 +278,7 @@ function repair_old_metadata = (
 
 
 
-struct DialogStruct 
-(
-	pathQuery = rollout pathQuery "Add a Library" width:550 height:200
-	(
-		local returnStr = ""
 
-		label lab_info "Set a path for the new Lib:"
-		editText edit_path 	"" width: 460 across:2
-		button but_browse "..." offset:[100,-1]
-		button but_create "Create Library"
-
-		on but_browse pressed do (
-			p = getSaveFileName caption:"Save" types:"Material Library(*.mat)"
-			if p != undefined then (
-				if not matchpattern p pattern:"*.mat" then p += ".mat"
-				edit_path.text = p
-			)
-		)
-
-		fn launch = (
-			destroyDialog DialogStruct.pathQuery
-			createDialog DialogStruct.pathQuery modal:true
-			returnStr
-		)
-
-		on but_create pressed do (
-			destroyDialog DialogStruct.pathQuery
-			returnStr = edit_path.text
-		)
-	)
-)
 
 
 
@@ -269,20 +297,19 @@ fn repair_name newName = (
 
 
 function create_new_library = (
-	DialogStruct = DialogStruct()
-	result = DialogStruct.pathQuery.launch()
-	if result == undefined then return false
 
+	local result = getSaveFileName caption:"Save" types:"Material Library(*.mat)"
+	if result == undefined then return false
+	if not matchpattern result pattern:"*.mat" then result += ".mat"
+	
+	
  	local newName = getFilenameFile result 
  	local savePath = pathConfig.removePathLeaf result
 
 	if newName == undefined OR newName == "" then return undefined
 
-
 	newName = repair_name newName
 
-	print newName 
- 	print savePath 
 
 	if doesFileExist  (savePath + "\\" + newName + ".mat") then (
 		messageBox "Library does alredy exist"
@@ -294,7 +321,7 @@ function create_new_library = (
 	success = saveTempMaterialLibrary matlib (savePath + "\\" + newName + ".mat")
 	if success then (
 		success = makeDir (savePath + "\\" + newName + "__THUMBS__")
-		messageBox "Library created"
+		messageBox "Library created" bleep:false title:"Success"
 		add_to_user_paths (savePath + "\\" + newName + ".mat")
 		return success
 	)
@@ -309,7 +336,9 @@ function addToLibrary lib_path = (
 	load = loadMaterialLibrary lib_path
 	if NOT load then (print "Library not found"; return false)
 	local mtls = get_materials()
+
 	if mtls == undefined then return false
+	--for mtl in mtls do mtl.name = repair_name mtl.name
 
 	local lib = currentMaterialLibrary
 
@@ -341,7 +370,8 @@ function addToLibrary lib_path = (
 
 	)
 	-- if there are new materals, ask for metadata
-	if existing_mtls.count != mtls.count then get_metadata_from_user()
+	local meta = undefined
+	if existing_mtls.count != mtls.count then meta = get_metadata_from_user()
 
 	-- write materials
 	for mat in mtls do 
@@ -351,7 +381,7 @@ function addToLibrary lib_path = (
 		if x == 0 then 
 		(
 			relink mat ((pathconfig.removePathLeaf lib_path) + "\\" + (getFileNameFile lib_path) + "__MAPS__")
-			create_metadata mat
+			create_metadata mat metadata:meta
 			append currentMaterialLibrary mat
 			saveMaterialLibrary lib_path
 		)
@@ -362,10 +392,10 @@ function addToLibrary lib_path = (
 			(
 				relink mat ((pathconfig.removePathLeaf lib_path) + "\\" + (getFileNameFile lib_path) + "__MAPS__")
 				local metadata = read_metadata currentMaterialLibrary[x]
-				create_metadata mat
-				mat.meta.type = metadata[1]
-				mat.meta.comment = metadata[2]
-				mat.meta.id = metadata[4]
+				create_metadata mat metadata:metadata
+				--mat.meta.type 		= metadata.type
+				--mat.meta.comment 	= metadata.comment
+				--mat.meta.id 		= metadata.id
 				currentMaterialLibrary[x] = mat
 				saveMaterialLibrary lib_path
 				deleteImage mat
@@ -402,11 +432,37 @@ function removefromlibrary lib_path mtl = (
 
 
 
--- replacing
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- replacing materials in scene
 
 
 
@@ -491,7 +547,7 @@ function is_same_material a b = (
 	if meta_a == undefined then return false
 	meta_b = read_metadata b
 	if meta_b == undefined then return false
-	meta_b[4] == meta_a[4]
+	meta_b.id == meta_a.id
 )
 
 function find_submaterials_to_replace mtl newOne = (

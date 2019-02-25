@@ -25,6 +25,18 @@ global lightgrey = (dotNetClass "System.Drawing.Color").fromARGB 128 128 128
 global darkgrey = (dotNetClass "System.Drawing.Color").fromARGB 45 45 45
 
 
+
+struct metadataStruct (
+	type,
+	id,
+	comment,
+	saved_at
+)
+
+
+
+
+
 fn get_image mtl = (
 	local libname = getFileNameFile current_lib_path
 	img_name = (pathConfig.removePathLeaf current_lib_path) + "\\" + libname + "__THUMBS__\\" + mtl.name + ".*"
@@ -88,6 +100,11 @@ filein "edit_libs.ms"
 fn show_image mtl = (
 	try (ShellLaunch (get_image mtl) "")
 	catch()
+	local maps = #()
+	local success = check_maps mtl files:&maps
+	if not success then messageBox (array_to_string maps)
+
+
 )
 fn apply_material index = (
 )
@@ -118,17 +135,24 @@ fn get_Directories = (
 fn get_repo = (
 	global repo = readLine (openFile "repo_path.txt")
 )
+
+fn show_material_warning mtl = (
+	myTool.dnc_label_d.text = ""
+	local maps = #()
+	if not (check_maps mtl files:&maps) then myTool.dnc_label_d.text = (maps.count as string + " maps missing      Right-Click thumbnail for details")
+)
 fn select_material index = (
 	selected_mtl = current_lib[index]
 	if selected_mtl == undefined then return undefined
 	--stopTool dragg
 	--startTool dragg
 	print_metadata selected_mtl 
+	show_material_warning selected_mtl
 	local meta = read_metadata selected_mtl
 	myTool.dnc_label_a.text = selected_mtl.name
 	if meta != undefined then (
-		myTool.dnc_label_b.text = meta[3] + "          " + meta[4] + "-" + meta[1] as string
-		myTool.dnc_label_c.text = meta[2] 
+		myTool.dnc_label_b.text = meta.saved_at + "          " + meta.id + "-" + meta.type as string
+		myTool.dnc_label_c.text = meta.comment 
 	)
 	else (
 		myTool.dnc_label_b.text = "no info"
@@ -165,8 +189,9 @@ Utility myTool "Material Browser"
 
 	dotNetControl 	lv_mtls 			"System.Windows.Forms.ListView" width:250 height:500 align:#left offset:[300,0] visible:false
 	dotNetControl 	tv 					"TreeView" pos:[0,0] width:300 height:600 across:2
+	dotNetControl 	dnc_label_d 		"Windows.Forms.Label" pos:[10,620] width:290
 	dotNetControl 	dnc_label_a 		"Windows.Forms.Label" pos:[10,660] width:290 
-	dotNetControl 	dnc_label_c 		"Windows.Forms.Label" pos:[10,690] width:290 
+	dotNetControl 	dnc_label_c 		"Windows.Forms.Label" pos:[10,690] width:290  
 	dotNetControl 	dnc_label_b 		"Windows.Forms.Label" pos:[10,780] width:290 
 	subrollout 		theSub 				height:728 width:1100 pos:[305,0]
 	bitmap 			bmp_preview 		width:400 height:400 pos:[600,5] visible:false
@@ -319,8 +344,10 @@ Utility myTool "Material Browser"
 		dnc_label_a.backColor = bg
 		dnc_label_b.backColor = bg
 		dnc_label_c.backColor = bg
+		dnc_label_d.backColor = bg
 		dnc_label_b.foreColor = lightgrey
 		dnc_label_c.foreColor = lightgrey
+		dnc_label_d.foreColor = redColor
 		--dnc_label_a.backColor = (dotNetClass "System.Drawing.Color").fromArgb bkgCol.r bkgCol.g bkgCol.b
 		--dnc_label_a.foreColor = (dotNetClass "System.Drawing.Color").fromARGB 128 255 128
 		dnc_label_a.foreColor = (dotNetClass "System.Drawing.Color").fromARGB 255 255 255

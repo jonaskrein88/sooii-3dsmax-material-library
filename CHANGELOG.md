@@ -67,9 +67,13 @@ all changes are documented here
 ### Added
 - hdri support
 
+## 2019-02-25
+### Changed
+- Better info edit Box
+- Metadata as struct
+
 # TODO
-* open in explorer
-* thumbnails creation while rendering
+* rename material in infobox
 * replace query on load/apply
 * rewrite user input
 * highlight selected
