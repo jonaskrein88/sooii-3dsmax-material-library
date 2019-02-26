@@ -210,6 +210,7 @@ Utility myTool "Material Browser"
 	button 			but_edit_meta 		"Edit" pos:[900,765] width:50 tooltip:"Edit the metadata of the selected material"
 	button 			but_edit_libmeta 	"Edit all" pos:[950,765] width:50 tooltip:"Edit the metadata of the current library"
 	button 			but_relink 			"Relink" pos:[1000,765] width:50 tooltip:"Opens a window where you can relink maps of the current library\nThis is useful after moving a library"
+	button 			but_collect 		"Collect maps" pos:[1050,765]
 	button 			but_repair 			"R" pos:[1050,765] width:20 tooltip:"updates metadata format" visible:false
 
 	button 			but_go 				"Render Previews"  pos:[1150,765] width:100
@@ -453,6 +454,8 @@ Utility myTool "Material Browser"
 		removefromlibrary current_lib_path selected_mtl
 		refresh_images()
 	)
+
+	on but_collect pressed do user_collect_maps()
 
 	on but_settings pressed do (
 		global settingsWindow

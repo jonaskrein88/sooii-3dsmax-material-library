@@ -17,6 +17,40 @@ global all_paths = #()
 filein "edit_libs.ms"
 
 
+-- thumbs
+
+fn has_thumbnail mtl path = (
+	files = getfiles (path + "\\" + mtl.name + ".thmbnl")
+	return (files != undefined and files[1] != undefined)
+)
+fn create_thumbnail mtl path = (
+	--searches directory for preview file and creates thumbnail version
+	files = getfiles (path + "\\" + mtl.name + ".jpg")
+	if (files != undefined and files[1] != undefined) then 
+	(
+		img = openBitMap files[1]
+		new_img = bitmap 200 200
+		copy img new_img
+		new_img.filename = (path + "\\" + mtl.name + "_thmbnl.jpg")
+		save new_img
+	)
+)
+fn create_thumbnails_for_lib libfile path = (
+	lib = read_library libfile
+	for mtl in lib do create_thumbnail mtl path
+)
+fn create_thumbnails repo = (
+	find_librarys repo &libs &paths
+	for i = 1 to libs.count do create_thumbnails_for_lib libs[i] paths[i]
+)
+
+
+
+
+
+
+
+
 
 -- previews
 
@@ -26,7 +60,7 @@ fn layers_off = (
 
 fn show_geo mtl = (
 	local meta = read_metadata mtl
-	local type = if meta != undefined then meta[1] else 1
+	local type = if meta != undefined then meta.type else 1
 	print type
 	layers_off()
 	(LayerManager.getLayerFromName "0").on = true
@@ -35,25 +69,28 @@ fn show_geo mtl = (
 	(LayerManager.getLayerFromName "FABRIC").on = if type == 3 then true else false
 )
 
-fn scale_to_tex mtl = (
-	objs = $_GEO*
-	maps = getClassInstances bitmapTexture target:mtl
-	tex = maps[1].bitmap
-	if tex == undefined then return false
-	w = tex.width as float
-	h = tex.height as float
-	ratio = w / h
+fn scale_to_tex mtl = ( 
+	try(
+		objs = $_GEO*
+		maps = getClassInstances bitmapTexture target:mtl
+		if maps == undefined then return false
+		tex = maps[1].bitmap
+		if tex == undefined then return false
+		w = tex.width as float
+		h = tex.height as float
+		ratio = w / h
 
-	for obj in objs do (
-		uv = obj.modifiers["UVW XForm"]
-		if uv != undefined then (
-			uv.U_Tile = 1
-			uv.V_Tile = 1
-			uv.V_Tile = ratio
-			print ratio
+		for obj in objs do (
+			uv = obj.modifiers["UVW XForm"]
+			if uv != undefined then (
+				uv.U_Tile = 1
+				uv.V_Tile = 1
+				uv.V_Tile = ratio
+				print ratio
+			)
 		)
 	)
-	true
+	catch()
 )
 
 
@@ -101,13 +138,17 @@ fn render_previews_for_lib libfile dir = (
 	mtls = read_library libfile 
 	jobs = create_joblist dir mtls
 	fileoutgamma = 2.2
-	for j in jobs do (
-		if superClassOf j == material then
+	for m in jobs do (
+		if superClassOf m == material then
 		(
-			success = render_preview j dir
+			success = render_preview m dir
 			if not success then return false
+			create_thumbnail m dir
 		)
-		else render_hdri j dir
+		else (
+			render_hdri m dir
+			create_thumbnail m dir
+		)
 	)
 	true
 )
@@ -143,32 +184,8 @@ fn render_previews repo = (
 
 
 
--- thumbs
 
-fn has_thumbnail mtl path = (
-	files = getfiles (path + "\\" + mtl.name + ".thmbnl")
-	return (files != undefined and files[1] != undefined)
-)
-fn create_thumbnail mtl path = (
-	--if has_thumbnail mtl path then return true
-	files = getfiles (path + "\\" + mtl.name + ".jpg")
-	if (files != undefined and files[1] != undefined) then 
-	(
-		img = openBitMap files[1]
-		new_img = bitmap 200 200
-		copy img new_img
-		new_img.filename = (path + "\\" + mtl.name + "_thmbnl.jpg")
-		save new_img
-	)
-)
-fn create_thumbnails_for_lib libfile path = (
-	lib = read_library libfile
-	for mtl in lib do create_thumbnail mtl path
-)
-fn create_thumbnails repo = (
-	find_librarys repo &libs &paths
-	for i = 1 to libs.count do create_thumbnails_for_lib libs[i] paths[i]
-)
+
 
 fn read_directories_from_file file = (
 	lines = (dotnetClass "System.IO.File").ReadAllLines file

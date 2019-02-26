@@ -72,6 +72,13 @@ all changes are documented here
 - Better info edit Box
 - Metadata as struct
 
+## 2019-02-25
+### Added
+- Collect Bitmaps
+- Show Bitmaps
+- render Previews Bugfix
+- Thumbnail creation while rendering
+
 # TODO
 * rename material in infobox
 * replace query on load/apply

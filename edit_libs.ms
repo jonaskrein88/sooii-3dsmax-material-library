@@ -100,11 +100,6 @@ function add_to_SME mat jump:true = (
 	local theView = sme.getview actIndex
 	if theView == undefined then (messageBox "open sme"; return false)
 
-	--navi = sme.GetMaterialPool()
-	--pos = [0,0]
-	--navi.position = pos
-	--navi.setFocus()
-
 	local pos = [random -1000 1000, random -1000 1000]
 	local newNode = theView.createnode mat pos
 	if jump then (
@@ -118,7 +113,12 @@ function add_to_SME mat jump:true = (
 
 
 
-
+struct metadataStruct (
+	type,
+	id,
+	comment,
+	saved_at
+)
 
 
 
