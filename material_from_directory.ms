@@ -1,3 +1,8 @@
+global directory 
+global pattern
+
+
+
 
 struct mapsStruct (
 	diffuse,
@@ -25,13 +30,18 @@ fn texture_to_bitmapnode file gamma:1 = (
 
 
 fn find_texture path name type gamma:1 = (
-	local maps = getfiles (path + "\\" + "*" + name + "*" + type + "*")
-	if maps[1] != undefined then return (texture_to_bitmapnode maps[1] gamma:gamma)
+	local pattern = (path + "\\" + "*" + name + "*" + type + "*")
+	local maps = getfiles pattern
+	print pattern
+	if maps[1] != undefined then (print ("found " + maps[1]); return (texture_to_bitmapnode maps[1] gamma:gamma))
 )
 
 
 fn find_textures path name = (
 	local maps = mapsStruct()
+
+
+
 	maps.diffuse 		= find_texture path name "diffuse" 		gamma:2.2
 	maps.albedo 		= find_texture path name "albedo" 		gamma:2.2
 	maps.opacity 		= find_texture path name "opacity"  	
@@ -44,6 +54,12 @@ fn find_textures path name = (
 	maps.displacement 	= find_texture path name "displacement"
 	maps.metalness 		= find_texture path name "metalness"
 	maps.cavity 		= find_texture path name "cavity"
+
+	if maps.diffuse == undefined then maps.diffuse 		= find_texture path name "_d" 		gamma:2.2
+	if maps.bump == undefined then maps.bump 			= find_texture path name "_b"
+	if maps.specular == undefined then maps.specular 	= find_texture path name "_s"
+
+
 
 	if maps.opacity == undefined 			then maps.opacity 			= find_texture path name "alpha"
 	if maps.opacity == undefined 			then maps.opacity 			= find_texture path name "coverage"
@@ -91,6 +107,7 @@ fn make_falloff &map = (
 	old_map = map
 	map = falloff()
 	map.map1 = old_map
+	map
 )
 
 
@@ -128,6 +145,8 @@ rollout materialMaker "material maker"
 	checkbox chk_fresnel "Blend glossiness with fresnel"
 	checkbox chk_negativeRange "Displacement Range [-1 to 1]"
 	edittext edt_prefix "Name prefix" width:250
+	checkbox chk_useSpecAsGloss "use specular map for gloss"
+	checkbox chk_invertspec "invert specular for glossiness"
 
 	button but_go  "Go" width:100 height:50
 
@@ -138,7 +157,7 @@ rollout materialMaker "material maker"
 	fn create_material path name = (
 		local maps = find_textures path name 
 
-		if maps.diffuse == undefined AND maps.albedo == undefined then return undefined
+		if maps.diffuse == undefined AND maps.albedo == undefined then (messagebox "could not find diffuse";return undefined)
 
 
 		local mtl = vraymtl()
@@ -149,16 +168,33 @@ rollout materialMaker "material maker"
 
 
 		mtl.texmap_diffuse = if maps.diffuse != undefined then maps.diffuse else maps.albedo
-
-		if maps.specular != undefined 	then mtl.texmap_reflection = maps.specular 
+ 
 
 		if maps.opacity != undefined then mtl.texmap_opacity = maps.opacity
 
 
+		-- specular
+		if maps.specular != undefined 	then mtl.texmap_reflection = maps.specular
+
+
+		-- glossiness
 		if maps.glossiness != undefined then mtl.texmap_reflectionGlossiness = maps.glossiness
 		else
 		if maps.roughness != undefined 	then mtl.texmap_reflectionGlossiness = invert_texture maps.roughness
+		-- use spec
+		if chk_useSpecAsGloss.checked and mtl.texmap_reflectionGlossiness == undefined and mtl.texmap_reflection != undefined then 
+		(
+			mtl.texmap_reflectionGlossiness = mtl.texmap_reflection
+			if chk_invertspec.checked then mtl.texmap_reflectionGlossiness = invert_texture mtl.texmap_reflection  
+		)
+		-- falloff
 		if chk_fresnel.checked and mtl.texmap_reflectionGlossiness != undefined then make_falloff &mtl.texmap_reflectionGlossiness
+
+
+
+
+
+
 		
 		if maps.normal != undefined then (
 			normalnode = make_normal_node maps.normal
@@ -205,6 +241,14 @@ rollout materialMaker "material maker"
 
 
 
+	on materialMaker close do (
+		global pattern = edt_pattern.text
+		global directory = edt_path.text
+	)
+	on materialMaker open do (
+		if pattern != undefined then edt_pattern.text = pattern
+		if directory != undefined then edt_path.text = directory
+	)
 
 
 
