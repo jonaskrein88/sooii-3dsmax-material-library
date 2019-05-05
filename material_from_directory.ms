@@ -32,8 +32,14 @@ fn texture_to_bitmapnode file gamma:1 = (
 fn find_texture path name type gamma:1 = (
 	local pattern = (path + "\\" + "*" + name + "*" + type + "*")
 	local maps = getfiles pattern
-	print pattern
 	if maps[1] != undefined then (print ("found " + maps[1]); return (texture_to_bitmapnode maps[1] gamma:gamma))
+)
+
+fn does_exist path name = (
+	local pattern = (path + "\\" + "*" + name + "*")
+	files = getfiles pattern
+	if files == undefined or files == #() then return false
+	true
 )
 
 
@@ -134,7 +140,8 @@ function add_to_SME mat jump:true = (
 
 
 
-
+try DestroyDialog materialMaker
+catch()
 
 rollout materialMaker "material maker"
 (
@@ -155,9 +162,11 @@ rollout materialMaker "material maker"
 
 
 	fn create_material path name = (
+
+		if not (does_exist path name) then return undefined
 		local maps = find_textures path name 
 
-		if maps.diffuse == undefined AND maps.albedo == undefined then (messagebox "could not find diffuse";return undefined)
+		if maps.diffuse == undefined AND maps.albedo == undefined then (print "could not find diffuse";return undefined)
 
 
 		local mtl = vraymtl()
