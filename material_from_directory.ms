@@ -32,6 +32,7 @@ fn texture_to_bitmapnode file gamma:1 = (
 fn find_texture path name type gamma:1 = (
 	local pattern = (path + "\\" + "*" + name + "*" + type + "*")
 	local maps = getfiles pattern
+	print pattern
 	if maps[1] != undefined then (print ("found " + maps[1]); return (texture_to_bitmapnode maps[1] gamma:gamma))
 )
 
@@ -63,6 +64,7 @@ fn find_textures path name = (
 
 	if maps.diffuse == undefined then maps.diffuse 		= find_texture path name "_d" 		gamma:2.2
 	if maps.bump == undefined then maps.bump 			= find_texture path name "_b"
+	if maps.specular == undefined then maps.specular 	= find_texture path name "_r"
 	if maps.specular == undefined then maps.specular 	= find_texture path name "_s"
 
 
@@ -137,6 +139,14 @@ function add_to_SME mat jump:true = (
 	mat
 )
 
+fn repair_name name = (
+	name = substituteString name " " ""
+	name = substituteString name "\\" ""
+	name
+
+)
+
+
 
 
 
@@ -151,11 +161,12 @@ rollout materialMaker "material maker"
 
 	checkbox chk_fresnel "Blend glossiness with fresnel"
 	checkbox chk_negativeRange "Displacement Range [-1 to 1]"
-	edittext edt_prefix "Name prefix" width:250
+	edittext edt_matName "Name" width:250
 	checkbox chk_useSpecAsGloss "use specular map for gloss"
 	checkbox chk_invertspec "invert specular for glossiness"
 
 	button but_go  "Go" width:100 height:50
+
 
 
 
@@ -173,7 +184,8 @@ rollout materialMaker "material maker"
 		local normalNode
 		local compositeNode
 
-		mtl.name = edt_prefix.text + (pathConfig.stripPathToLeaf path) 
+		mtl.name = edt_matName.text + (pathConfig.stripPathToLeaf path) 
+		mtl.name = repair_name mtl.name
 
 
 		mtl.texmap_diffuse = if maps.diffuse != undefined then maps.diffuse else maps.albedo
@@ -243,26 +255,109 @@ rollout materialMaker "material maker"
 		)
 
 
-		try $.material = mtl
-		catch()
+		--try $.material = mtl
+		--catch()
+		print ("Created:    " + mtl.name)
 		add_to_SME mtl
+		return mtl
 	)
+
+
+
+
+	-- regex 
+	/*
+	fn batch_create = (
+		local pattern = edt_pattern.text
+		local directory = edt_path.text
+		if (findstring pattern "#") != 0 then (
+
+			fileNames = ""
+			files = getfiles (directory + "\\*")
+			for f in files do fileNames += f + "\n"
+
+			filenames = substituteString filenames "#" @"\d+"
+
+			rgx = dotnetObject "System.Text.RegularExpressions.Regex" pattern
+			result = rgx.Replace input " "
+
+		)
+
+	)
+	*/
+
+	fn batch_create = (
+
+		local pattern = edt_pattern.text
+		local directory = edt_path.text
+		if (findstring pattern "#") != 0 then 
+		(
+			placeholder = ""
+			for i = 0 to pattern.count where pattern[i] == "#" do placeholder += "#"
+
+			for i = 0 to 3 do 
+			(
+				local index = i as string
+				while index.count < placeholder.count do index = "0" + index
+
+				local combinedPattern = substituteString pattern placeholder index 
+
+				local mtl = create_material directory combinedPattern
+				if mtl != undefined then mtl.name = substituteString edt_matName.text placeholder index
+				
+			)
+
+		)
+	)
+
+
+
+
+
+
+
+	fn iterate_directories dir = (
+		local directories = getDirectories (dir + "/*")
+		for d in directories do (
+			local mtl = create_material d edt_pattern.text
+
+		)
+	)
+
+
+
+
+	fn run = (
+		--create_material edt_path.text edt_pattern.text
+		batch_create()
+
+
+	)
+
+
+
+
+
+
+
 
 
 
 	on materialMaker close do (
 		global pattern = edt_pattern.text
 		global directory = edt_path.text
+		global matName = edt_matName.text
 	)
 	on materialMaker open do (
 		if pattern != undefined then edt_pattern.text = pattern
 		if directory != undefined then edt_path.text = directory
+		if matName != undefined then edt_matName.text = matname
 	)
 
 
 
 	on but_clear pressed do edt_pattern.text = ""
-	on but_go pressed do create_material edt_path.text edt_pattern.text
+	on but_go pressed do run() 
 
 
 )
