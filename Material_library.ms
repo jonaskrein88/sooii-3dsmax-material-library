@@ -113,8 +113,11 @@ fn show_preview index = (
 	if selected_mtl != undefined then show_image selected_mtl
 )
 fn read_directories_from_file file = (
-	lines = (dotnetClass "System.IO.File").ReadAllLines file
-	lines
+	if  doesFileExist file then (
+		lines = (dotnetClass "System.IO.File").ReadAllLines file
+		lines
+	)
+	else messageBox ("Could not find file: " + file)
 )
 fn read_global_directories = (
 	out = read_directories_from_file (repo + "\\" + "paths.txt")
@@ -156,7 +159,6 @@ fn select_material index = (
 	)
 	else (
 		myTool.dnc_label_b.text = "no info"
-		myTool.dnc_label_b.text = "no info"
 	)
 	true
 )
@@ -169,8 +171,11 @@ fn open_icon iconspath n = (
 	local fpath = iconspath + "\\" + n + ".bmp"
 	local fname = (getfiles fpath)[1]
 	if fname != undefined and doesFileExist fname then (
+		try(
 		img = dotNetClass "System.Drawing.Image" --create an image
-		ilTv.images.add (img.fromFile fname)
+		if img != undefined then ilTv.images.add (img.fromFile fname)
+		)
+		catch print "error  could not create icons"
 	)
 	else print "no icon"
 )
@@ -210,7 +215,7 @@ Utility myTool "Material Browser"
 	button 			but_edit_meta 		"Edit" pos:[900,765] width:50 tooltip:"Edit the metadata of the selected material"
 	button 			but_edit_libmeta 	"Edit all" pos:[950,765] width:50 tooltip:"Edit the metadata of the current library"
 	button 			but_relink 			"Relink" pos:[1000,765] width:50 tooltip:"Opens a window where you can relink maps of the current library\nThis is useful after moving a library"
-	button 			but_collect 		"Collect maps" pos:[1050,765]
+	button 			but_collect 		"Collect maps" pos:[1050,765] tooltip:"Collect the Textures into the current library folder.\nThis is useful when the Lib was not created in this tool and the textures still may be in a temp directoy"
 	button 			but_repair 			"R" pos:[1050,765] width:20 tooltip:"updates metadata format" visible:false
 
 	button 			but_go 				"Render Previews"  pos:[1150,765] width:100
@@ -255,6 +260,7 @@ Utility myTool "Material Browser"
 		root = tv.Nodes.add "Public"
 		root.imageIndex = 2
 		root.SelectedImageIndex = 2
+		if globalPaths == undefined or globalpaths == #() then (print "no global paths"; return false)
 		root.foreColor = greenColor
 		for dir in globalPaths do 
 		(
@@ -446,7 +452,7 @@ Utility myTool "Material Browser"
 	)
 	on but_add pressed do (
 		success = addToLibrary current_lib_path
-		refresh_images()
+		if success then refresh_images()
 	)
 	on but_replace pressed do with undo label: "Replace" on replace_materials()
 
@@ -619,5 +625,5 @@ Utility myTool "Material Browser"
 
 
 )
-CreateDialog myTool width:1400 height:800 style:#(#style_titlebar, #style_border, #style_sysmenu, #style_minimizebox) -- bgcolor:(color 45 45 45)
+CreateDialog myTool width:1420 height:800 style:#(#style_titlebar, #style_border, #style_sysmenu, #style_minimizebox) -- bgcolor:(color 45 45 45)
 		

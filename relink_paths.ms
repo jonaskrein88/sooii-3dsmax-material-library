@@ -196,7 +196,7 @@ fn user_relink = (
 
 	Utility relinkWindow "Relink maps"
 	(
-		edittext edt_path "New Path" width:500
+		edittext edt_path "Collect into:" width:500
 		checkbox chk_wholeLib "Relink complete Library" checked:true
 		button but_go "Relink"
 		button but_show "Show maps"
@@ -239,7 +239,7 @@ fn user_relink = (
 			)
 			all_maps = makeUniqueArray all_maps
 
-			messageBox (array_to_string all_maps) beep:false title:(all_maps.count as string + " maps found")
+			messageBox (array_to_string all_maps) beep:false title:(all_maps.count as string + " maps")
 
 		)
 		on relinkWindow open do (

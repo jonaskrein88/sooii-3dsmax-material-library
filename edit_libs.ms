@@ -1,10 +1,10 @@
 
-function set_user_path = (
+fn set_user_path = (
 	local userDir = (dotNetClass "System.Environment").GetEnvironmentVariable "UserProfile"
 	global userfile = userDir += "\\Documents\\3dsMax\\_mtl_userPaths.txt"
 	userfile
 )
-function SMEGetSelNodes = (
+fn SMEGetSelNodes = (
 	if NOT sme.IsOpen() then return undefined
 	local actIndex = sme.activeview
 	local theView = sme.getview actIndex
@@ -13,7 +13,7 @@ function SMEGetSelNodes = (
 	local maps = for n in selNodes where(superclassof n.reference) == textureMap collect n.reference
 	return #(mtls, maps)
 )
-function get_materials = (
+fn get_materials = (
 	-- checks if sme selection 
 	-- then checks object selection
 	sel = SMEGetSelNodes()
@@ -38,14 +38,14 @@ function get_materials = (
 	mtls
 )
 
-function deleteImage mtl = (
+fn deleteImage mtl = (
 	img = get_image mtl
 	if img != undefined then deletefile img
 	img = get_thumbnail mtl
 	if img != undefined then deletefile img
 )
 
-function get_time = (
+fn get_time = (
 	t = getLocalTime()
 	day = t[4] as string
 	month = t[2] as string
@@ -57,7 +57,7 @@ function get_time = (
 	day + "." + month + "." + year + "   " + hour + ":" + minute
 )
 
-function isInLibrary lib mat = (
+fn isInLibrary lib mat = (
 	matName = mat.name
 	for i = 1 to lib.count do (
 		if lib[i].name == matName then return i 
@@ -65,7 +65,7 @@ function isInLibrary lib mat = (
 	return 0
 )
 
-function create_Hash =(
+fn create_Hash =(
 	lt = getLocalTime()
 	-- date
 	indexes = #(2,4)
@@ -92,7 +92,7 @@ function create_Hash =(
 )
 
 
-function add_to_SME mat jump:true = (
+fn add_to_SME mat jump:true = (
 	if mat == undefined then return 0
 	
 	if not (sme.isOpen()) then sme.open()
@@ -125,7 +125,7 @@ struct metadataStruct (
 
 
 
-function create_metadata mtl metadata:undefined = (
+fn create_metadata mtl metadata:undefined = (
 	myAttributes = attributes meta attribID:#(0x1995bf6c, 0x5f4fdb00)
 	(
 		parameters main 
@@ -143,10 +143,7 @@ function create_metadata mtl metadata:undefined = (
 	mtl.meta.type = if metadata != undefined then metadata.type else 1
 	mtl.meta.id = create_Hash()
 )
-
-
-
-function read_metadata mtl = (
+fn read_metadata mtl = (
 	if not isProperty mtl "meta" then return undefined
 	local meta = metadataStruct()
 	meta.type 		= if mtl.meta.type != undefined 		then mtl.meta.type else 1
@@ -155,11 +152,11 @@ function read_metadata mtl = (
 	meta.id 		= if mtl.meta.id != undefined 			then mtl.meta.id else ""
 	return meta
 )
-function has_metadata mtl = (
+fn has_metadata mtl = (
 	x = isProperty mtl "meta"
 	x
 )
-function print_metadata mtl = (
+fn print_metadata mtl = (
 	print (read_metadata mtl)
 )
 
@@ -169,10 +166,7 @@ function print_metadata mtl = (
 
 
 
-
-
-struct infoBoxStruct 
-(
+struct infoBoxStruct (
 	mtl,
 	meta,
 	fn launch selected_mtl:undefined = (
@@ -214,9 +208,8 @@ fn get_metadata_from_user mtl:undefined = (
 	meta = infoBoxVar.launch selected_mtl:mtl
 	return meta
 )
-	
 
-function edit_metadata mtl = (
+fn edit_metadata mtl = (
 	if mtl == undefined then return undefined
 	local meta = get_metadata_from_user mtl:mtl
 	if meta == undefined then return undefined
@@ -230,7 +223,7 @@ function edit_metadata mtl = (
 	saveMaterialLibrary current_lib_path
 )
 
-function edit_metadata_lib = (
+fn edit_metadata_lib = (
 	if current_lib_path == undefined  OR current_lib == undefined then return undefined
 	local meta = get_metadata_from_user()
 	if meta == undefined then return undefined
@@ -243,11 +236,11 @@ function edit_metadata_lib = (
 		mtl.meta.comment = meta.comment
 		mtl.saved_at = get_time()
 	)
-	saveMaterialLibrary current_lib_path
+	--saveMaterialLibrary current_lib_path
+	sort_library current_lib_path
 )
 
-
-function repair_old_material_metadata mtl = (
+fn repair_old_material_metadata mtl = (
 
 	-- check if has new type
 	if isProperty mtl "meta" then return true
@@ -266,7 +259,8 @@ function repair_old_material_metadata mtl = (
 	create_metadata mtl
 	--saveMaterialLibrary current_lib_path
 )
-function repair_old_metadata = (
+
+fn repair_old_metadata = (
 	if current_lib == undefined then return 0
 	for mtl in current_lib do repair_old_material_metadata mtl 
 	saveMaterialLibrary current_lib_path
@@ -282,9 +276,10 @@ function repair_old_metadata = (
 
 
 
-
 fn repair_name newName = (
 	if newName == undefined OR newName == "" then return undefined
+	newName = substituteString newName "\\" ""
+	newName = substituteString newName "/" ""
 	newName = substituteString newName " " "_"
 	newName = substituteString newName "." "_"
 	newName = substituteString newName "ä" "ae"
@@ -293,10 +288,7 @@ fn repair_name newName = (
 	newName
 )
 
-
-
-
-function create_new_library = (
+fn create_new_library = (
 
 	local result = getSaveFileName caption:"Save" types:"Material Library(*.mat)"
 	if result == undefined then return false
@@ -330,15 +322,32 @@ function create_new_library = (
 
 
 
+-- SORT Materials
+fn mtlCmpFN m1 m2 = stricmp m1.name m2.name
 
-function addToLibrary lib_path = (
+fn sort_library lib_path = (
+	load = loadMaterialLibrary lib_path
+	if NOT load then (print "Library not found"; return false)
+
+	local mtls = for m in currentMaterialLibrary where superclassof m == Material collect m
+	qsort mtls mtlCmpFN 
+
+	for i = 1 to mtls.count do currentMaterialLibrary[i] = mtls[i]
+	saveMaterialLibrary lib_path
+)
+
+
+
+
+
+fn addToLibrary lib_path = (
 
 	load = loadMaterialLibrary lib_path
 	if NOT load then (print "Library not found"; return false)
 	local mtls = get_materials()
 
 	if mtls == undefined then return false
-	--for mtl in mtls do mtl.name = repair_name mtl.name
+	for mtl in mtls do mtl.name = repair_name mtl.name
 
 	local lib = currentMaterialLibrary
 
@@ -380,7 +389,7 @@ function addToLibrary lib_path = (
 		-- does not exist
 		if x == 0 then 
 		(
-			relink mat ((pathconfig.removePathLeaf lib_path) + "\\" + (getFileNameFile lib_path) + "__MAPS__")
+			relink mat ((pathconfig.removePathLeaf lib_path) + "\\" + (getFileNameFile lib_path) + "__MAPS__" + "\\" + mat.name)
 			create_metadata mat metadata:meta
 			append currentMaterialLibrary mat
 			saveMaterialLibrary lib_path
@@ -390,7 +399,7 @@ function addToLibrary lib_path = (
 		(
 			if override_all == true then 
 			(
-				relink mat ((pathconfig.removePathLeaf lib_path) + "\\" + (getFileNameFile lib_path) + "__MAPS__")
+				relink mat ((pathconfig.removePathLeaf lib_path) + "\\" + (getFileNameFile lib_path) + "__MAPS__" + "\\" + mat.name)
 				local metadata = read_metadata currentMaterialLibrary[x]
 				create_metadata mat metadata:metadata
 				--mat.meta.type 		= metadata.type
@@ -403,9 +412,10 @@ function addToLibrary lib_path = (
 			)
 		)
 	)
+	sort_library lib_path
 	true
 )
-function removefromlibrary lib_path mtl = (
+fn removefromlibrary lib_path mtl = (
 	print "removing"
 	if mtl == undefined then (print "mtl not found"; return false)
 	load = loadMaterialLibrary lib_path
