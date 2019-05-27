@@ -35,19 +35,6 @@ fn create_thumbnail mtl path = (
 		save new_img
 	)
 )
-fn create_thumbnails_for_lib libfile path = (
-	lib = read_library libfile
-	for mtl in lib do create_thumbnail mtl path
-)
-fn create_thumbnails repo = (
-	find_librarys repo &libs &paths
-	for i = 1 to libs.count do create_thumbnails_for_lib libs[i] paths[i]
-)
-
-
-
-
-
 
 
 
@@ -85,8 +72,9 @@ fn scale_to_tex mtl = (
 			if uv != undefined then (
 				uv.U_Tile = 1
 				uv.V_Tile = 1
-				uv.V_Tile = ratio
-				print ratio
+				if ratio > 1 then 	uv.V_Tile = ratio
+				else 				uv.U_Tile = 1.0 / ratio
+				--print ratio
 			)
 		)
 	)
@@ -95,17 +83,17 @@ fn scale_to_tex mtl = (
 
 
 fn render_preview mtl dir = (
-		filename = dir + "\\" + mtl.name + ".jpg"
-		show_geo mtl
-		for o in $_GEO* do o.material = mtl
-		scale_to_tex mtl
-		cam = getNodeByName "_CAM"
-		$PREVIEW_DOME.enabled = false
-		$DEFAULT_DOME.enabled = true
-		--return true
-		makeDir dir
-		render camera:cam vfb:false outputfile:filename cancelled:&cancel quiet:true outputwidth:rendersize outputheight:rendersize
-		return (not cancel)
+	filename = dir + "\\" + mtl.name + ".jpg"
+	show_geo mtl
+	for o in $_GEO* do o.material = mtl
+	scale_to_tex mtl
+	cam = getNodeByName "_CAM"
+	$PREVIEW_DOME.enabled = false
+	$DEFAULT_DOME.enabled = true
+	--return true
+	makeDir dir
+	render camera:cam vfb:false outputfile:filename cancelled:&cancel quiet:true outputwidth:rendersize outputheight:rendersize
+	return (not cancel)
 )
 
 fn render_hdri map dir = (
@@ -184,6 +172,18 @@ fn render_previews repo = (
 
 
 
+fn create_thumbnails_for_lib libfile path = (
+	lib = read_library libfile
+	for mtl in lib do create_thumbnail mtl path
+)
+fn create_thumbnails repo = (
+	find_librarys repo &libs &paths
+	for i = 1 to libs.count do create_thumbnails_for_lib libs[i] paths[i]
+)
+
+
+
+
 
 
 
@@ -208,7 +208,7 @@ fn get_repo = (
 
 
 
-
+print "Script running"
 get_repo()
 read_global_directories()
 read_user_directories()

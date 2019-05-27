@@ -29,7 +29,7 @@ fn set_filename n newpath = (
 	)
 )
 fn check_maps mtl &files:#() = (
-	-- returns false if maps are missing, returns maps 
+	-- returns false if maps are missing, returns maps as &files
 	local out = true
 	local all_maps = get_maps mtl
 	for map in all_maps do (
@@ -234,7 +234,11 @@ fn user_relink = (
 			for mtl in mtls do 
 			(
 				local nodes = get_maps mtl
-				local maps = for node in nodes collect (get_filename node)
+				local maps = for node in nodes collect (
+					local file = get_filename node
+					if (doesfileexist file) then ("OK      " + file )
+					else ("MISSING " + file)
+				)
 				all_maps += maps
 			)
 			all_maps = makeUniqueArray all_maps

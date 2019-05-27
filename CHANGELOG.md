@@ -79,6 +79,19 @@ all changes are documented here
 - render Previews Bugfix
 - Thumbnail creation while rendering
 
+
+## 2019-05-27
+### Changed
+- some small catches on missing files
+
+### Added
+- sort materials on _add_ and _edit_
+- sort paths alphabetically
+- _add directory path_ button 
+- _OK/Missing_ tag on _show maps_
+
+
+
 # TODO
 * rename material in infobox
 * replace query on load/apply

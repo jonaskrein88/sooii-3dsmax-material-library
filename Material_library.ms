@@ -69,13 +69,16 @@ fn write_file myPath lines = (
 fn add_to_public_paths newPath = (
 	if newPath == undefined or newPath == "" then return false
 	append globalPaths newPath
+	qsort globalPaths stricmp
 	write_file (repo + "\\" + "paths.txt") globalPaths
 )
 fn add_to_user_paths newPath = (
 	if newPath == undefined or newPath == "" then return false
 	append userPaths newPath
+	qsort userPaths stricmp
 	write_file userfile userPaths
 )
+
 
 /*
 tool dragg (
@@ -471,9 +474,10 @@ Utility myTool "Material Browser"
 			(
 				MultiListBox  		mlt_paths 			"" width:600 height:20 align:#left  across:2
 				label 				lab_info 			"Public Librarys are accessable \nfor all users" width:200 height:100 offset:[130,0] 
-				button 				but_add 			"Add" align:#left across:3 align:#left 
+				button 				but_add 			"Add" align:#left across:4 align:#left 
+				button 				but_addDir			"Add Directory" align:#left  align:#left offset:[-150,0]
 				button 				but_remove 			"Remove" align:#left 
-				button 				but_private 		"make private" align:#left offset:[-200,0]
+				button 				but_private 		"make private" align:#left offset:[-100,0]
 
 			)
 			label space00 ""
@@ -481,9 +485,10 @@ Utility myTool "Material Browser"
 			(
 				MultiListBox  		mlt_paths_User 		"" width:600 height:20 align:#left across:2
 				label 				lab_info_user 		"Public Librarys are only visible to \nyou. Click 'make public' if you want \nothers to use your Materials " width:210 height:100 offset:[130,0]
-				button 				but_add_user 		"Add" align:#left across:3 align:#left
+				button 				but_add_user 		"Add" align:#left across:4 align:#left
+				button 				but_addDir_user		"Add Directory" align:#left  align:#left offset:[-150,0]
 				button 				but_remove_user		"Remove" align:#left 
-				button 				but_public 			"make public" align:#left offset:[-200,0]
+				button 				but_public 			"make public" align:#left offset:[-100,0]
 			)
 
 			fn init = (
@@ -497,12 +502,23 @@ Utility myTool "Material Browser"
 				add_to_user_paths p
 				init()
 			)
+			
 			on but_add pressed do (
 				p = getOpenFileName caption:"Select a Library" types:"Material Library(*.mat)"
 				add_to_public_paths p
 				init()
 			)
+			on but_addDir pressed do (
+				local p = getSavePath caption:"Add Directory"
+				if p != undefined then add_to_public_paths p
+				init()
+			)
 
+			on but_addDir_user pressed do (
+				local p = getSavePath caption:"Add Directory"
+				if p != undefined then add_to_user_paths p
+				init()
+			)
 
 			fn remove_public  = (
 				sel = mlt_paths.selection

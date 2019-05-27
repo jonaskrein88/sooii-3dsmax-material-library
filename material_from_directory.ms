@@ -46,6 +46,8 @@ rollout materialMaker "material maker"
 	checkbox chk_fresnel "Blend Glossiness with Falloff"
 	checkbox chk_specGamma "Gamma correct Specular/Glossiness" tooltip:"Load maps with gamma 2.2.\nIn my experience:\nArrowWay = on\nMegaScans = off"
 	checkbox chk_negativeRange "Displacement Range [-1 to 1]"
+	button 	 but_loadMaps "Only load maps" align:#left
+	button 	 but_nameFromMap "Set Name from Map" align:#left
 
 	spinner spn_gloss "Glossiness" align:#right width:80 range:[0,1,1]
 	spinner spn_spec  "Spec" align:#right width:80 range:[0,1,1]
@@ -58,8 +60,8 @@ rollout materialMaker "material maker"
 	spinner spn_mapDispl  "Displace Map" align:#right width:80 range:[0,100,5]
 
 	
+	button but_go  "Go" width:100 height:50 across:2
 
-	button but_go  "Go" width:100 height:50
 
 
 
@@ -171,19 +173,17 @@ rollout materialMaker "material maker"
 
 
 
-
-	fn add_to_SME mat jump:true = (
+	fn add_to_SME mat jump:true isMap:false = (
 		if mat == undefined then return 0
 		
 		if not (sme.isOpen()) then sme.open()
 		local actIndex = sme.activeview
 		local theView = sme.getview actIndex
 		if theView == undefined then (messageBox "open sme"; return false)
-
 		--local pos = if index == undefined then [random -1000 1000, random -1000 1000] else [0, index * 200]
 		yOffset += 1
-
-		local pos = [xOffset * 1000, yOffset * 500]
+		local ySpacing = if isMap then 80 else 500
+		local pos = [xOffset * 1000, yOffset * ySpacing]
 		local newNode = theView.createnode mat pos
 		if jump then (
 			theView.SetSelectedNodes  #(mat)
@@ -191,6 +191,25 @@ rollout materialMaker "material maker"
 			theView.ZoomExtents type:#selected
 		)
 		mat
+	)
+
+
+	fn SMEGetSelNodes = (
+		if NOT sme.IsOpen() then return undefined
+		local actIndex = sme.activeview
+		local theView = sme.getview actIndex
+		local selNodes = theView.getSelectedNodes()
+		local mtls = for n in selNodes where(superclassof n.reference) == material collect n.reference
+		local maps = for n in selNodes where(superclassof n.reference) == textureMap collect n.reference
+		return #(mtls, maps)
+	)
+	fn get_selected_mtls = (
+		selected = SMEGetSelNodes()
+		if selected != undefined and selected[1] != undefined then return selected[1]
+	)
+	fn get_selected_maps = (
+		selected = SMEGetSelNodes()
+		if selected != undefined and selected[2] != undefined then return selected[2]
 	)
 
 
@@ -261,41 +280,33 @@ rollout materialMaker "material maker"
 
 		-- glossiness
 		if maps.glossiness != undefined then mtl.texmap_reflectionGlossiness = maps.glossiness
-
 		else
 		if maps.roughness != undefined 	then (
 			mtl.texmap_reflectionGlossiness = invert_texture maps.roughness
 		)
 		-- use spec
-		if chk_useSpecAsGloss.checked and mtl.texmap_reflectionGlossiness == undefined and mtl.texmap_reflection != undefined then 
-		(
+		if chk_useSpecAsGloss.checked and mtl.texmap_reflectionGlossiness == undefined and mtl.texmap_reflection != undefined then (
 			mtl.texmap_reflectionGlossiness = mtl.texmap_reflection
 			if chk_invertspec.checked then mtl.texmap_reflectionGlossiness = invert_texture mtl.texmap_reflection  
 		)
 		-- falloff
 		if chk_fresnel.checked and mtl.texmap_reflectionGlossiness != undefined then make_falloff &mtl.texmap_reflectionGlossiness
 
-
-
-
-
-
-		
+		-- normal
 		if maps.normal != undefined then (
 			set_blur maps.normal
 			normalnode = make_normal_node maps.normal
 			mtl.texmap_bump = normalnode
 		)
+		-- bump
 		if maps.bump != undefined then (
 			set_blur maps.bump
 			if normalnode != undefined then normalnode.bump_map = maps.bump
 			else mtl.texmap_bump = maps.bump
 		)
-
+		-- displacement
 		if maps.displacement != undefined then (
-
-			if chk_negativeRange.checked then 
-			(
+			if chk_negativeRange.checked then (
 				local outputnode = output()
 				outputnode.map1 = set_gamma(maps.displacement)
 				outputnode.output.rgb_level = 2
@@ -304,17 +315,17 @@ rollout materialMaker "material maker"
 			)
 			else mtl.texmap_displacement = maps.displacement
 		)
-
-			 
+		-- AO
 		if maps.ao != undefined then (
 			if (classof mtl.texmap_diffuse) != CompositeTexturemap then mtl.texmap_diffuse = make_composite mtl.texmap_diffuse
 			add_map_to_comp mtl.texmap_diffuse maps.ao
 		)
+		-- Cavity
 		if maps.cavity != undefined then (
 			if (classof mtl.texmap_diffuse) != CompositeTexturemap then mtl.texmap_diffuse = make_composite mtl.texmap_diffuse
 			add_map_to_comp mtl.texmap_diffuse maps.cavity
 		)
-
+		-- Metalness
 		if maps.metalness != undefined then (
 			mtl.texmap_reflectionIOR = invert_texture maps.metalness 
 			mtl.reflection_fresnel = false
@@ -379,9 +390,6 @@ rollout materialMaker "material maker"
 				--for i = 0 to pattern.count where pattern[i] == "%" do placeholder2 += "%"
 			)
 			xOffset += 1
-
-
-
 			for i = 51 to 80 do 
 			(
 				local index = i as string
@@ -507,6 +515,35 @@ rollout materialMaker "material maker"
 
 	on but_clear pressed do edt_pattern.text = ""
 	on but_go pressed do run() 
+
+	on but_loadMaps pressed do (
+		allfiles = #()
+		formats = #("png", "jpg", "tif")
+		for f in formats do (
+			files = getFiles (edt_path.text + "\\*." + f) 
+			allfiles += files
+		)
+		qsort allfiles stricmp
+		for f in allfiles do (
+			local node = texture_to_bitmapnode f gamma:2.2
+			add_to_SME node isMap:true
+		)
+	)
+
+	on but_nameFromMap pressed do (
+		mtls = get_selected_mtls()
+		if mtls == undefined then return false
+		for m in mtls do 
+		(
+			maps = getClassInstances bitmapTexture target:m
+			if maps != undefined and maps != #() then 
+			(
+				name = name_from_node maps[1]
+				m.name = name
+				print ("changed to " + name)
+			)
+		)
+	)
 
 
 )
